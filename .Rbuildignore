@@ -3,6 +3,7 @@
 LICENSE$
 dev
 inst/extdata
+inst/extdata/dekamer.txt
 inst/models/english.model
 inst/models/english.vocab
 inst/models/nl.wiki.bpe.vs200000.model
