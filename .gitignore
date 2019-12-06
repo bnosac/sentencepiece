@@ -1,0 +1,11 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+src/*.o
+src/*.so
+src/*.dll
+inst/models/english.model
+inst/models/english.vocab
+inst/models/nl.wiki.bpe.vs200000.model
+inst/models/nl.wiki.bpe.vs200000.vocab

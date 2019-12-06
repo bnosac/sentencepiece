@@ -1,0 +1,7 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+inst/extdata
+inst/models/english.model
+inst/models/english.vocab
+inst/models/nl.wiki.bpe.vs200000.model
+inst/models/nl.wiki.bpe.vs200000.vocab
