@@ -1,5 +1,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+LICENSE$
+dev
 inst/extdata
 inst/models/english.model
 inst/models/english.vocab
