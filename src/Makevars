@@ -1,0 +1,61 @@
+CXX_STD = CXX11
+PKG_LIBS = -pthread 
+PKG_CPPFLAGS = -pthread -DSTRICT_R_HEADERS -I. -I./sentencepiece -I./sentencepiece/src -I./sentencepiece/src/builtin_pb -I./third_party/absl -I./third_party/darts_clone -I./third_party/esaxx -I./third_party/protobuf-lite 
+
+SOURCES = third_party/protobuf-lite/arena.cc   \
+					third_party/protobuf-lite/arenastring.cc   \
+					third_party/protobuf-lite/bytestream.cc   \
+					third_party/protobuf-lite/coded_stream.cc   \
+					third_party/protobuf-lite/common.cc   \
+					third_party/protobuf-lite/extension_set.cc   \
+					third_party/protobuf-lite/generated_message_table_driven_lite.cc   \
+					third_party/protobuf-lite/generated_message_util.cc   \
+					third_party/protobuf-lite/implicit_weak_message.cc   \
+					third_party/protobuf-lite/int128.cc   \
+					third_party/protobuf-lite/io_win32.cc   \
+					third_party/protobuf-lite/message_lite.cc   \
+					third_party/protobuf-lite/repeated_field.cc   \
+					third_party/protobuf-lite/status.cc   \
+					third_party/protobuf-lite/statusor.cc   \
+					third_party/protobuf-lite/stringpiece.cc   \
+					third_party/protobuf-lite/stringprintf.cc   \
+					third_party/protobuf-lite/structurally_valid.cc   \
+					third_party/protobuf-lite/strutil.cc   \
+					third_party/protobuf-lite/time.cc   \
+					third_party/protobuf-lite/wire_format_lite.cc   \
+					third_party/protobuf-lite/zero_copy_stream.cc   \
+					third_party/protobuf-lite/zero_copy_stream_impl_lite.cc   \
+					third_party/absl/strings/string_view.cc   \
+					sentencepiece/src/builtin_pb/sentencepiece.pb.cc   \
+					sentencepiece/src/builtin_pb/sentencepiece_model.pb.cc   \
+					sentencepiece/src/bpe_model.cc   \
+					sentencepiece/src/bpe_model_trainer.cc   \
+					sentencepiece/src/builder.cc   \
+					sentencepiece/src/char_model.cc   \
+					sentencepiece/src/char_model_trainer.cc   \
+					sentencepiece/src/error.cc   \
+					sentencepiece/src/filesystem.cc   \
+					sentencepiece/src/flags.cc   \
+					sentencepiece/src/model_factory.cc   \
+					sentencepiece/src/model_interface.cc   \
+					sentencepiece/src/normalizer.cc   \
+					sentencepiece/src/sentencepiece_processor.cc   \
+					sentencepiece/src/sentencepiece_trainer.cc   \
+					sentencepiece/src/trainer_factory.cc   \
+					sentencepiece/src/trainer_interface.cc   \
+					sentencepiece/src/unicode_script.cc   \
+					sentencepiece/src/unigram_model.cc   \
+					sentencepiece/src/unigram_model_trainer.cc   \
+					sentencepiece/src/util.cc   \
+					sentencepiece/src/word_model.cc   \
+					sentencepiece/src/word_model_trainer.cc   \
+					rcpp_sentencepiece.cpp   \
+					RcppExports.cpp
+
+OBJ       = $(SOURCES:.cc=.o)
+OBJECTS   = $(OBJ:.cpp=.o)
+
+.PHONY: all
+
+all: $(SHLIB); rm -f $(OBJECTS)
+#all: $(SHLIB); rm -f rcpp_sentencepiece.o; rm -f RcppExports.o
