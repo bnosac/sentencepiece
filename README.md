@@ -37,12 +37,37 @@ model <- sentencepiece_load_model(dl$file_model)
 model
 ```
 
+```
+Sentencepiece model
+  size of the vocabulary: 50000
+  model stored at: C:/Users/Jan/Documents/R/win-library/3.5/sentencepiece/models/en.wiki.bpe.vs50000.model
+```
+
 ```{r}
 txt <- c("Give me back my Money or I'll call the police.",
          "Talk to the hand because the face don't want to hear it any more.")
 txt <- tolower(txt)
 sentencepiece_encode(model, txt, type = "subwords")
+```
+
+```
+[[1]]
+ [1] "▁give"   "▁me"     "▁back"   "▁my"     "▁money"  "▁or"     "▁i"      "'"       "ll"      "▁call"   "▁the"    "▁police" "."      
+
+[[2]]
+ [1] "▁talk"    "▁to"      "▁the"     "▁hand"    "▁because" "▁the"     "▁face"    "▁don"     "'"        "t"        "▁want"    "▁to"      "▁hear"    "▁it"      "▁any"     "▁more"    "."
+```
+
+```{r}
 sentencepiece_encode(model, txt, type = "ids")
+```
+
+```
+[[1]]
+ [1]  3090   352   810  1241  2795   127   386 49937  1188   612     7  2142 49935
+
+[[2]]
+ [1]  4252    42     7  1197   936     7  3227  1616 49937 49915  4451    42  6800   107   756   407 49935
 ```
 
 
