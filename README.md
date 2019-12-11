@@ -15,7 +15,7 @@ The R package allows you to
 - build a Byte Pair Encoding (BPE), Unigram, Char or Word model
 - apply the model to encode text
 - apply the model to decode ids back to text
-- download pretrained sentencepiece models built on Wikipedia (under construction)
+- download pretrained sentencepiece models built on Wikipedia
 
 
 ## Installation
@@ -28,7 +28,25 @@ Look to the documentation of the functions
 help(package = "sentencepiece")
 ```
 
-## Example
+## Example on encoding / decoding with a pretrained model built on Wikipedia
+
+```{r}
+library(sentencepiece)
+dl <- sentencepiece_download_model("English", vocab_size = 50000)
+model <- sentencepiece_load_model(dl$file_model)
+model
+```
+
+```{r}
+txt <- c("Give me back my Money or I'll call the police.",
+         "Talk to the hand because the face don't want to hear it any more.")
+txt <- tolower(txt)
+sentencepiece_encode(model, txt, type = "subwords")
+sentencepiece_encode(model, txt, type = "ids")
+```
+
+
+## Example on training
 
 - As an example, let's take some training data containing questions asked in Belgian Parliament in 2017 and focus on French text only.
 
