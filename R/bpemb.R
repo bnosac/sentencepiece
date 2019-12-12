@@ -24,6 +24,7 @@
 #' @seealso \code{\link{sentencepiece_load_model}}
 #' @export
 #' @examples
+#' \dontrun{
 #' ##
 #' ## Download only the tokeniser model
 #' ##
@@ -44,10 +45,19 @@
 #' str(dl)
 #' model     <- sentencepiece_load_model(dl$file_model)
 #' embedding <- read_word2vec(dl$glove$file_model)
+#' }
+#' 
+#' 
+#' dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 25,
+#'                                    model_dir = tempdir())
+#' str(dl)
+#' 
+#' # clean up for CRAN
+#' file.remove(dl$file_model)
+#' file.remove(dl$glove$file_model)
 sentencepiece_download_model <- function(language, vocab_size, dim, 
                                          model_dir = system.file(package = "sentencepiece", "models")){
-  
-  type <- match.arg(type)
+  type <- "bpemb"
   vocab_size <- as.integer(vocab_size)
   
   download_file <- function(url, to, mode){
@@ -127,6 +137,12 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
 #' @seealso \code{\link{readLines}}
 #' @export
 #' @examples
+#' embedding <- system.file(package = "sentencepiece", "models", 
+#'                          "nl.wiki.bpe.vs1000.d25.w2v.txt")
+#' embedding <- read_word2vec(embedding)
+#' head(embedding, 10)
+#' 
+#' \dontrun{
 #' ## English
 #' dl <- sentencepiece_download_model("en", vocab_size = 5000, dim = 100)
 #' embedding <- read_word2vec(dl$glove$file_model)
@@ -139,6 +155,7 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
 #' ## Vlaams
 #' dl <- sentencepiece_download_model("Vlaams", vocab_size = 50000, dim = 25)
 #' embedding <- read_word2vec(dl$glove$file_model)
+#' }
 read_word2vec <- function(x, encoding = "UTF-8"){
   x <- readLines(x, skipNul = TRUE, encoding = encoding)
   size <- x[1]

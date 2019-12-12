@@ -37,6 +37,7 @@ These models contain Byte Pair Encoded models trained with sentencepiece as well
 as Glove embeddings of these Byte Pair subwords. Models for 275 languages are availble.
 }
 \examples{
+\dontrun{
 ##
 ## Download only the tokeniser model
 ##
@@ -57,6 +58,16 @@ dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50)
 str(dl)
 model     <- sentencepiece_load_model(dl$file_model)
 embedding <- read_word2vec(dl$glove$file_model)
+}
+
+
+dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 25,
+                                   model_dir = tempdir())
+str(dl)
+
+# clean up for CRAN
+file.remove(dl$file_model)
+file.remove(dl$glove$file_model)
 }
 \seealso{
 \code{\link{sentencepiece_load_model}}

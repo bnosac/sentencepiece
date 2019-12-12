@@ -18,6 +18,12 @@ a matrix with one row per token containing the embedding of the token
 Read a word2vec embedding file
 }
 \examples{
+embedding <- system.file(package = "sentencepiece", "models", 
+                         "nl.wiki.bpe.vs1000.d25.w2v.txt")
+embedding <- read_word2vec(embedding)
+head(embedding, 10)
+
+\dontrun{
 ## English
 dl <- sentencepiece_download_model("en", vocab_size = 5000, dim = 100)
 embedding <- read_word2vec(dl$glove$file_model)
@@ -30,6 +36,7 @@ embedding <- read_word2vec(dl$glove$file_model)
 ## Vlaams
 dl <- sentencepiece_download_model("Vlaams", vocab_size = 50000, dim = 25)
 embedding <- read_word2vec(dl$glove$file_model)
+}
 }
 \seealso{
 \code{\link{readLines}}
