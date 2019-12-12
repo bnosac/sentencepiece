@@ -8,7 +8,8 @@ Authors@R: c(person('Jan', 'Wijffels', role = c('aut', 'cre', 'cph'), email = 'j
     person('The Abseil Authors', role = c('ctb', 'cph'), comment = "Files at src/third_party/absl (Apache License, Version 2.0"),
     person('Google Inc.', role = c('ctb', 'cph'), comment = "Files at src/third_party/protobuf-lite (BSD-3 License"),
     person('Susumu Yata', role = c('ctb', 'cph'), comment = "Files at src/third_party/darts_clone (BSD-3 License"),
-    person('Daisuke Okanohara', role = c('ctb', 'cph'), comment = "Files at src/third_party/esaxx (MIT License)"))
+    person('Daisuke Okanohara', role = c('ctb', 'cph'), comment = "Files at src/third_party/esaxx (MIT License)"),
+    person('Benjamin Heinzerling', role = c('ctb', 'cph'), comment = "Files data/models/nl.wiki.bpe.vs1000.d25.w2v.txt and data/models/nl.wiki.bpe.vs1000.model (MIT License)"))
 Maintainer: Jan Wijffels <jwijffels@bnosac.be>
 Description: Unsupervised text tokenizer allowing to perform Byte Pair Encoding and Unigram modelling. 
     Wraps the 'sentencepiece' library <https://github.com/google/sentencepiece> which provides a language independent subword tokenizer. The techniques are explained explained in the paper <10.18653/v1/D18-2012>.
