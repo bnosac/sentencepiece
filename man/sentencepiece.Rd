@@ -37,9 +37,14 @@ Construct a Sentencepiece model on text.
 library(tokenizers.bpe)
 data(belgium_parliament, package = "tokenizers.bpe")
 writeLines(belgium_parliament$text, con = "traindata.txt")
-model <- sentencepiece("traindata.txt", type = "unigram", vocab_size = 5000)
-model <- sentencepiece("traindata.txt", type = "char", vocab_size = 5000)
-model <- sentencepiece("traindata.txt", type = "bpe", vocab_size = 5000)
+model <- sentencepiece("traindata.txt", type = "char", vocab_size = 10)
+model <- sentencepiece("traindata.txt", type = "unigram", vocab_size = 10)
+model <- sentencepiece("traindata.txt", type = "bpe", vocab_size = 10)
+
+\dontrun{
+model <- sentencepiece("traindata.txt", type = "char")
+model <- sentencepiece("traindata.txt", type = "unigram", vocab_size = 20000)
+model <- sentencepiece("traindata.txt", type = "bpe", vocab_size = 4000)
 
 txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
          "On est d'accord sur le prix de la biere?")
@@ -48,7 +53,7 @@ sentencepiece_encode(model, x = txt, type = "ids")
 model <- sentencepiece_load_model("sentencepiece.model")
 sentencepiece_encode(model, x = txt, type = "subwords")
 sentencepiece_encode(model, x = txt, type = "ids")
-
+}
 
 # clean up for CRAN
 file.remove("sentencepiece.model")
