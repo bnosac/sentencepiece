@@ -45,7 +45,7 @@ std::vector<std::vector<std::string>> spc_encode_as_subwords(SEXP model, const s
   Rcpp::XPtr<sentencepiece::SentencePieceProcessor> processor(model);
   
   std::vector<std::vector<std::string>> x_encoded;
-  for (int i = 0; i < x.size(); i++){
+  for (unsigned int i = 0; i < x.size(); i++){
      std::vector<std::string> pieces;
      processor->Encode(x[i], &pieces);
      x_encoded.push_back(pieces);
@@ -59,7 +59,7 @@ std::vector<std::vector<int>> spc_encode_as_ids(SEXP model, const std::vector<st
   Rcpp::XPtr<sentencepiece::SentencePieceProcessor> processor(model);
   
   std::vector<std::vector<int>> x_encoded;
-  for (int i = 0; i < x.size(); i++){
+  for (unsigned int i = 0; i < x.size(); i++){
     std::vector<int> ids;
     processor->Encode(x[i], &ids);
     x_encoded.push_back(ids);
