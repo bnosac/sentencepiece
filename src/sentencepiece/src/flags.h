@@ -1,3 +1,4 @@
+#include <Rcpp.h>
 // Copyright 2016 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -87,8 +88,8 @@ void ParseCommandLineFlags(int argc, char **argv,
 
 #define CHECK_OR_HELP(flag)                                        \
   if (FLAGS_##flag.empty()) {                                      \
-    std::cout << "ERROR: --" << #flag << " must not be empty\n\n"; \
-    std::cout << sentencepiece::flags::PrintHelp(PACKAGE_STRING);  \
+    Rcpp::Rcout << "ERROR: --" << #flag << " must not be empty\n\n"; \
+    Rcpp::Rcout << sentencepiece::flags::PrintHelp(PACKAGE_STRING);  \
     sentencepiece::error::Exit(0);                                 \
   }
 
