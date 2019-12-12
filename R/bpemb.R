@@ -1,21 +1,22 @@
 
 
 #' @title Download a Sentencepiece model
-#' @description Download a pre-trained Sentencepiece model. \cr
-#' The function \code{sentencepiece_download_model} allows to download pretrained models built on Wikipedia
-#' made available at \url{https://github.com/bheinzerling/bpemb}. These models contain Byte Pair Encoded models as well
-#' as Glove embeddings of these Byte Pair subwords.
-#' @param language a character string with the language name
-#' @param vocab_size integer indicating the number of tokens in the final vocabulary. Defaults to 5000.
+#' @description Download pretrained models built on Wikipedia
+#' made available at \url{https://nlp.h-its.org/bpemb} through \url{https://github.com/bheinzerling/bpemb}. 
+#' These models contain Byte Pair Encoded models trained with sentencepiece as well
+#' as Glove embeddings of these Byte Pair subwords. Models for 275 languages are availble.
+#' @param language a character string with the language name. This can be either a plain language or a wikipedia shorthand. \cr
+#' Possible values can be found by looking at the examples or typing sentencepiece:::.bpemb$languages \cr
+#' If you provide multi it downloads the multilingual model available at \url{https://nlp.h-its.org/bpemb/multi}
+#' @param vocab_size integer indicating the number of tokens in the final vocabulary. Defaults to 5000. Possible values depend on the language. To inspect possible values, type sentencepiece:::.bpemb$vocab_sizes and look to your language of your choice.
 #' @param dim dimension of the embedding. Either 25, 50, 100, 200 or 300.
-#' @param model_dir path to the location where the model will be downloaded to
-#' @param type currently only 'bpemb' is allowed indicating to download models available at \url{https://github.com/bheinzerling/bpemb}
+#' @param model_dir path to the location where the model will be downloaded to. Defaults to \code{system.file(package = "sentencepiece", "models")}.
 #' @return a list with elements 
 #' \itemize{
-#' \item{language: the provide language}
+#' \item{language: the provided language}
 #' \item{wikicode: the wikipedia code of the provided language}
-#' \item{file_model: the path to the Sentencepiece model}
-#' \item{url: the url where the model was fetched from}
+#' \item{file_model: the path to the downloaded Sentencepiece model}
+#' \item{url: the url where the Sentencepiece model was fetched from}
 #' \item{download_failed: logical, indicating if the download failed}
 #' \item{download_message: a character string with possible download failure information}
 #' \item{glove: a list with elements file_model, url, download_failed and download_message indicating the path to the Glove embeddings. Only present if the dim argument is provided in the function. Otherwise the embeddings will not be downloaded}
@@ -29,6 +30,7 @@
 #' dl <- sentencepiece_download_model("Russian", vocab_size = 1000)
 #' dl <- sentencepiece_download_model("English", vocab_size = 1000)
 #' dl <- sentencepiece_download_model("French", vocab_size = 1000)
+#' dl <- sentencepiece_download_model("multi", vocab_size = 320000)
 #' dl <- sentencepiece_download_model("Vlaams", vocab_size = 1000)
 #' dl <- sentencepiece_download_model("Dutch", vocab_size = 1000)
 #' dl <- sentencepiece_download_model("nl", vocab_size = 1000)
@@ -43,8 +45,7 @@
 #' model     <- sentencepiece_load_model(dl$file_model)
 #' embedding <- read_word2vec(dl$glove$file_model)
 sentencepiece_download_model <- function(language, vocab_size, dim, 
-                                         model_dir = system.file(package = "sentencepiece", "models"),
-                                         type = "bpemb"){
+                                         model_dir = system.file(package = "sentencepiece", "models")){
   
   type <- match.arg(type)
   vocab_size <- as.integer(vocab_size)
@@ -84,7 +85,7 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
       }
     }else{
       known_languages <- unique(c(.bpemb$languages$language, names(.bpemb$vocab_sizes)))
-      cat(sprintf("You requested %s\nBut you should take one of the following languages/wikicodes: %s\nTo inspect the list of languages/wiki type sentencepiece:::.bpemb$languages", language, paste(sort(known_languages), collapse = ", ")), sep = "\n")
+      cat(sprintf("You requested language '%s'\nBut you should take one of the following languages/wikicodes: %s\nTo inspect the list of languages/wiki type sentencepiece:::.bpemb$languages", language, paste(sort(known_languages), collapse = ", ")), sep = "\n")
     }
     models$vocab_size <- vocab_size
     
