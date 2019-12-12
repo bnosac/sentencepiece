@@ -1,6 +1,6 @@
 CXX_STD = CXX11
 PKG_LIBS = -pthread 
-PKG_CPPFLAGS = -pthread -DSTRICT_R_HEADERS -I. -I./sentencepiece -I./sentencepiece/src -I./sentencepiece/src/builtin_pb -I./third_party/absl -I./third_party/darts_clone -I./third_party/esaxx -I./third_party/protobuf-lite 
+PKG_CPPFLAGS = -D HAVE_PTHREAD=1 -pthread -DSTRICT_R_HEADERS -I. -I./sentencepiece -I./sentencepiece/src -I./sentencepiece/src/builtin_pb -I./third_party/absl -I./third_party/darts_clone -I./third_party/esaxx -I./third_party/protobuf-lite 
 
 SOURCES = third_party/protobuf-lite/arena.cc   \
 					third_party/protobuf-lite/arenastring.cc   \
