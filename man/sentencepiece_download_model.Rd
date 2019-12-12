@@ -38,6 +38,7 @@ as Glove embeddings of these Byte Pair subwords. Models for 275 languages are av
 }
 \examples{
 \dontrun{
+
 ##
 ## Download only the tokeniser model
 ##

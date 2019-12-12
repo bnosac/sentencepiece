@@ -25,7 +25,3 @@ spc_decode_subwords <- function(model, x) {
     .Call('_sentencepiece_spc_decode_subwords', PACKAGE = 'sentencepiece', model, x)
 }
 
-test <- function(filename) {
-    .Call('_sentencepiece_test', PACKAGE = 'sentencepiece', filename)
-}
-

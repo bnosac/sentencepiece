@@ -25,6 +25,7 @@
 #' @export
 #' @examples
 #' \dontrun{
+#' 
 #' ##
 #' ## Download only the tokeniser model
 #' ##
@@ -143,6 +144,7 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
 #' head(embedding, 10)
 #' 
 #' \dontrun{
+#' 
 #' ## English
 #' dl <- sentencepiece_download_model("en", vocab_size = 5000, dim = 100)
 #' embedding <- read_word2vec(dl$glove$file_model)
