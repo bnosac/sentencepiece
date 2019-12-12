@@ -42,13 +42,13 @@ as Glove embeddings of these Byte Pair subwords. Models for 275 languages are av
 ##
 ## Download only the tokeniser model
 ##
-dl <- sentencepiece_download_model("Russian", vocab_size = 1000)
-dl <- sentencepiece_download_model("English", vocab_size = 1000)
-dl <- sentencepiece_download_model("French", vocab_size = 1000)
+dl <- sentencepiece_download_model("Russian", vocab_size = 50000)
+dl <- sentencepiece_download_model("English", vocab_size = 100000)
+dl <- sentencepiece_download_model("French", vocab_size = 25000)
 dl <- sentencepiece_download_model("multi", vocab_size = 320000)
 dl <- sentencepiece_download_model("Vlaams", vocab_size = 1000)
-dl <- sentencepiece_download_model("Dutch", vocab_size = 1000)
-dl <- sentencepiece_download_model("nl", vocab_size = 1000)
+dl <- sentencepiece_download_model("Dutch", vocab_size = 25000)
+dl <- sentencepiece_download_model("nl", vocab_size = 25000)
 str(dl)
 model     <- sentencepiece_load_model(dl$file_model)
 
