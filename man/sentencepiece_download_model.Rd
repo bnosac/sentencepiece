@@ -38,20 +38,25 @@ made available at \url{https://github.com/bheinzerling/bpemb}. These models cont
 as Glove embeddings of these Byte Pair subwords.
 }
 \examples{
-## Only the model
-bpe_en  <- sentencepiece_download_model("English", vocab_size = 1000)
-bpe_fr  <- sentencepiece_download_model("French", vocab_size = 1000)
-bpe_wvl <- sentencepiece_download_model("WestFlemish", vocab_size = 1000)
-bpe_nl  <- sentencepiece_download_model("Dutch", vocab_size = 1000)
-bpe_nl  <- sentencepiece_download_model("nl", vocab_size = 1000)
-str(bpe_nl)
-model     <- sentencepiece_load_model(bpe_nl$file_model)
+##
+## Download only the tokeniser model
+##
+dl <- sentencepiece_download_model("Russian", vocab_size = 1000)
+dl <- sentencepiece_download_model("English", vocab_size = 1000)
+dl <- sentencepiece_download_model("French", vocab_size = 1000)
+dl <- sentencepiece_download_model("Vlaams", vocab_size = 1000)
+dl <- sentencepiece_download_model("Dutch", vocab_size = 1000)
+dl <- sentencepiece_download_model("nl", vocab_size = 1000)
+str(dl)
+model     <- sentencepiece_load_model(dl$file_model)
 
-## Model + embeddings
-bpe_nl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50)
-str(bpe_nl)
-model     <- sentencepiece_load_model(bpe_nl$file_model)
-embedding <- read_word2vec(bpe_nl$glove$file_model)
+##
+## Download the tokeniser model + Glove embeddings of Byte Pairs
+##
+dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50)
+str(dl)
+model     <- sentencepiece_load_model(dl$file_model)
+embedding <- read_word2vec(dl$glove$file_model)
 }
 \seealso{
 \code{\link{sentencepiece_load_model}}

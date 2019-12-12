@@ -4,26 +4,33 @@
 \alias{read_word2vec}
 \title{Read a word2vec embedding file}
 \usage{
-read_word2vec(x)
+read_word2vec(x, encoding = "UTF-8")
 }
 \arguments{
 \item{x}{path to the file}
+
+\item{encoding}{character string with the Encoding of the file. Defaults to 'UTF-8'. This is passed on to \code{readLines}}
 }
 \value{
 a matrix with one row per token containing the embedding of the token
 }
 \description{
 Read a word2vec embedding file
-
-Read a word2vec embedding file
 }
 \examples{
-bpe <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50)
-embedding <- read_word2vec(bpe$glove$file_model)
-bpe <- sentencepiece_download_model("Dutch", vocab_size = 1000, dim = 50)
-embedding <- read_word2vec(bpe$glove$file_model)
-bpe <- sentencepiece_download_model("WestFlemish", vocab_size = 50000, dim = 25)
-embedding <- read_word2vec(bpe$glove$file_model)
-model     <- sentencepiece_load_model(bpe$file_model)
-sentencepiece_encode(model, "Mieljaar wuk ne buchtspellement is me daddier")
+## English
+dl <- sentencepiece_download_model("en", vocab_size = 5000, dim = 100)
+embedding <- read_word2vec(dl$glove$file_model)
+
+## Dutch
+dl <- sentencepiece_download_model("nl", vocab_size = 10000, dim = 25)
+dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50)
+embedding <- read_word2vec(dl$glove$file_model)
+
+## Vlaams
+dl <- sentencepiece_download_model("Vlaams", vocab_size = 50000, dim = 25)
+embedding <- read_word2vec(dl$glove$file_model)
+}
+\seealso{
+\code{\link{readLines}}
 }

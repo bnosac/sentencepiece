@@ -23,20 +23,25 @@
 #' @seealso \code{\link{sentencepiece_load_model}}
 #' @export
 #' @examples
-#' ## Only the model
-#' bpe_en  <- sentencepiece_download_model("English", vocab_size = 1000)
-#' bpe_fr  <- sentencepiece_download_model("French", vocab_size = 1000)
-#' bpe_wvl <- sentencepiece_download_model("WestFlemish", vocab_size = 1000)
-#' bpe_nl  <- sentencepiece_download_model("Dutch", vocab_size = 1000)
-#' bpe_nl  <- sentencepiece_download_model("nl", vocab_size = 1000)
-#' str(bpe_nl)
-#' model     <- sentencepiece_load_model(bpe_nl$file_model)
+#' ##
+#' ## Download only the tokeniser model
+#' ##
+#' dl <- sentencepiece_download_model("Russian", vocab_size = 1000)
+#' dl <- sentencepiece_download_model("English", vocab_size = 1000)
+#' dl <- sentencepiece_download_model("French", vocab_size = 1000)
+#' dl <- sentencepiece_download_model("Vlaams", vocab_size = 1000)
+#' dl <- sentencepiece_download_model("Dutch", vocab_size = 1000)
+#' dl <- sentencepiece_download_model("nl", vocab_size = 1000)
+#' str(dl)
+#' model     <- sentencepiece_load_model(dl$file_model)
 #' 
-#' ## Model + embeddings
-#' bpe_nl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50)
-#' str(bpe_nl)
-#' model     <- sentencepiece_load_model(bpe_nl$file_model)
-#' embedding <- read_word2vec(bpe_nl$glove$file_model)
+#' ##
+#' ## Download the tokeniser model + Glove embeddings of Byte Pairs
+#' ##
+#' dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50)
+#' str(dl)
+#' model     <- sentencepiece_load_model(dl$file_model)
+#' embedding <- read_word2vec(dl$glove$file_model)
 sentencepiece_download_model <- function(language, vocab_size, dim, 
                                          model_dir = system.file(package = "sentencepiece", "models"),
                                          type = "bpemb"){
@@ -66,6 +71,10 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
     models <- list()
     models$language <- language
     models$wikicode <- .bpemb$languages$wikicode[tolower(.bpemb$languages$language) %in% tolower(language)]
+    models$wikicode <- unique(models$wikicode)
+    if(length(models$wikicode) == 0){
+      models$wikicode <- intersect(names(.bpemb$vocab_sizes), language)
+    }
     if(length(models$wikicode) > 0){
       language <- head(models$wikicode, 1)
       known_sizes <- .bpemb$vocab_sizes[[language]]
@@ -73,7 +82,9 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
       if(!vocab_size %in% known_sizes){
         warning(sprintf("Wikicode %s with vocab_size %s does not exist, you should take vocab_size one of: %s", language, vocab_size, paste(known_sizes, collapse = ", ")))
       }
-      
+    }else{
+      known_languages <- unique(c(.bpemb$languages$language, names(.bpemb$vocab_sizes)))
+      cat(sprintf("You requested %s\nBut you should take one of the following languages/wikicodes: %s\nTo inspect the list of languages/wiki type sentencepiece:::.bpemb$languages", language, paste(sort(known_languages), collapse = ", ")), sep = "\n")
     }
     models$vocab_size <- vocab_size
     
@@ -108,21 +119,27 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
 
 
 #' @title Read a word2vec embedding file
-#' @title Read a word2vec embedding file
+#' @description  Read a word2vec embedding file
 #' @param x path to the file
+#' @param encoding character string with the Encoding of the file. Defaults to 'UTF-8'. This is passed on to \code{readLines} 
 #' @return a matrix with one row per token containing the embedding of the token
+#' @seealso \code{\link{readLines}}
 #' @export
 #' @examples
-#' bpe <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50)
-#' embedding <- read_word2vec(bpe$glove$file_model)
-#' bpe <- sentencepiece_download_model("Dutch", vocab_size = 1000, dim = 50)
-#' embedding <- read_word2vec(bpe$glove$file_model)
-#' bpe <- sentencepiece_download_model("WestFlemish", vocab_size = 50000, dim = 25)
-#' embedding <- read_word2vec(bpe$glove$file_model)
-#' model     <- sentencepiece_load_model(bpe$file_model)
-#' sentencepiece_encode(model, "Mieljaar wuk ne buchtspellement is me daddier")
-read_word2vec <- function(x){
-  x <- readLines(x, skip = 1, encoding = "UTF-8")
+#' ## English
+#' dl <- sentencepiece_download_model("en", vocab_size = 5000, dim = 100)
+#' embedding <- read_word2vec(dl$glove$file_model)
+#' 
+#' ## Dutch
+#' dl <- sentencepiece_download_model("nl", vocab_size = 10000, dim = 25)
+#' dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50)
+#' embedding <- read_word2vec(dl$glove$file_model)
+#' 
+#' ## Vlaams
+#' dl <- sentencepiece_download_model("Vlaams", vocab_size = 50000, dim = 25)
+#' embedding <- read_word2vec(dl$glove$file_model)
+read_word2vec <- function(x, encoding = "UTF-8"){
+  x <- readLines(x, skipNul = TRUE, encoding = encoding)
   size <- x[1]
   size <- as.numeric(unlist(strsplit(size, " ")))
   x <- x[-1]
