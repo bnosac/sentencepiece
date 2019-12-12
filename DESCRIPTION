@@ -1,6 +1,6 @@
 Package: sentencepiece
 Type: Package
-Title: Text Tokenization using Byte Pair Encoding and Unigrams
+Title: Text Tokenization using Byte Pair Encoding and Unigram Modelling
 Version: 0.1.0
 Authors@R: c(person('Jan', 'Wijffels', role = c('aut', 'cre', 'cph'), email = 'jwijffels@bnosac.be', comment = "R wrapper"), 
     person('BNOSAC', role = 'cph', comment = "R wrapper"), 
@@ -12,7 +12,7 @@ Authors@R: c(person('Jan', 'Wijffels', role = c('aut', 'cre', 'cph'), email = 'j
     person('Benjamin Heinzerling', role = c('ctb', 'cph'), comment = "Files data/models/nl.wiki.bpe.vs1000.d25.w2v.txt and data/models/nl.wiki.bpe.vs1000.model (MIT License)"))
 Maintainer: Jan Wijffels <jwijffels@bnosac.be>
 Description: Unsupervised text tokenizer allowing to perform Byte Pair Encoding and Unigram modelling. 
-    Wraps the 'sentencepiece' library <https://github.com/google/sentencepiece> which provides a language independent subword tokenizer. The techniques are explained explained in the paper <10.18653/v1/D18-2012>.
+    Wraps the 'sentencepiece' library <https://github.com/google/sentencepiece> which provides a language independent 'subword' tokenizer. The techniques are explained explained in the paper <10.18653/v1/D18-2012>.
 URL: https://github.com/bnosac/sentencepiece
 License: MPL-2.0
 Encoding: UTF-8
