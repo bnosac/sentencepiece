@@ -25,3 +25,7 @@ spc_decode_subwords <- function(model, x) {
     .Call('_sentencepiece_spc_decode_subwords', PACKAGE = 'sentencepiece', model, x)
 }
 
+wordpiece_encode_as_subwords <- function(x, vocabulary, unk_token = "[UNK]", max_input_chars_per_word = 100L) {
+    .Call('_sentencepiece_wordpiece_encode_as_subwords', PACKAGE = 'sentencepiece', x, vocabulary, unk_token, max_input_chars_per_word)
+}
+

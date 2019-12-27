@@ -1,6 +1,6 @@
 CXX_STD = CXX11
 PKG_LIBS = -pthread 
-PKG_CPPFLAGS = -D HAVE_PTHREAD=1 -pthread -DSTRICT_R_HEADERS -I. -I./sentencepiece -I./sentencepiece/src -I./sentencepiece/src/builtin_pb -I./third_party/absl -I./third_party/darts_clone -I./third_party/esaxx -I./third_party/protobuf-lite 
+PKG_CPPFLAGS = -D HAVE_PTHREAD=1 -Wno-pedantic -Wno-misleading-indentation -Wno-sign-compare -pthread -DSTRICT_R_HEADERS -I. -I./sentencepiece -I./sentencepiece/src -I./sentencepiece/src/builtin_pb -I./third_party/absl -I./third_party/darts_clone -I./third_party/esaxx -I./third_party/protobuf-lite 
 
 SOURCES = third_party/protobuf-lite/arena.cc   \
 					third_party/protobuf-lite/arenastring.cc   \
@@ -50,6 +50,7 @@ SOURCES = third_party/protobuf-lite/arena.cc   \
 					sentencepiece/src/word_model.cc   \
 					sentencepiece/src/word_model_trainer.cc   \
 					rcpp_sentencepiece.cpp   \
+					rcpp_wordpiece.cpp   \
 					RcppExports.cpp
 
 OBJ       = $(SOURCES:.cc=.o)
@@ -58,4 +59,4 @@ OBJECTS   = $(OBJ:.cpp=.o)
 .PHONY: all
 
 all: $(SHLIB); rm -f $(OBJECTS)
-#all: $(SHLIB); rm -f rcpp_sentencepiece.o; rm -f RcppExports.o
+#all: $(SHLIB); rm -f rcpp_wordpiece.o; rm -f rcpp_sentencepiece.o; rm -f RcppExports.o

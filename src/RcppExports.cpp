@@ -75,6 +75,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// wordpiece_encode_as_subwords
+Rcpp::StringVector wordpiece_encode_as_subwords(std::string x, std::vector<std::string> vocabulary, std::string unk_token, int max_input_chars_per_word);
+RcppExport SEXP _sentencepiece_wordpiece_encode_as_subwords(SEXP xSEXP, SEXP vocabularySEXP, SEXP unk_tokenSEXP, SEXP max_input_chars_per_wordSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::string >::type x(xSEXP);
+    Rcpp::traits::input_parameter< std::vector<std::string> >::type vocabulary(vocabularySEXP);
+    Rcpp::traits::input_parameter< std::string >::type unk_token(unk_tokenSEXP);
+    Rcpp::traits::input_parameter< int >::type max_input_chars_per_word(max_input_chars_per_wordSEXP);
+    rcpp_result_gen = Rcpp::wrap(wordpiece_encode_as_subwords(x, vocabulary, unk_token, max_input_chars_per_word));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_sentencepiece_spc_train", (DL_FUNC) &_sentencepiece_spc_train, 1},
@@ -83,6 +97,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_sentencepiece_spc_encode_as_ids", (DL_FUNC) &_sentencepiece_spc_encode_as_ids, 2},
     {"_sentencepiece_spc_decode_ids", (DL_FUNC) &_sentencepiece_spc_decode_ids, 2},
     {"_sentencepiece_spc_decode_subwords", (DL_FUNC) &_sentencepiece_spc_decode_subwords, 2},
+    {"_sentencepiece_wordpiece_encode_as_subwords", (DL_FUNC) &_sentencepiece_wordpiece_encode_as_subwords, 4},
     {NULL, NULL, 0}
 };
 
