@@ -4,13 +4,16 @@
 \alias{wordpiece_encode}
 \title{Wordpiece encoding}
 \usage{
-wordpiece_encode(x, vocabulary = character(), unk_token = "[UNK]",
-  max_input_chars_per_word = 100L)
+wordpiece_encode(x, vocabulary = character(), type = c("subwords",
+  "ids"), unk_token = "[UNK]", max_input_chars_per_word = 100L)
 }
 \arguments{
 \item{x}{a character vector with text which can be splitted based on white space to obtain words}
 
 \item{vocabulary}{a character vector of the vocabulary}
+
+\item{type}{a character string, either 'subwords' or 'ids' to get the subwords or the corresponding ids of these subwords as defined in the vocabulary of the model. 
+Defaults to 'subwords'.}
 
 \item{unk_token}{character string with a value for a token which is not part of the vocabulary. Defaults to '[UNK]'}
 
@@ -28,4 +31,7 @@ wordpiece_encode(x = c("unaffable", "unaffableun"),
                  vocabulary = c("un", "##aff", "##able"))
 wordpiece_encode(x = c("unaffable", "unaffableun", "unknown territory"), 
                  vocabulary = c("un", "##aff", "##able", "##un")) 
+wordpiece_encode(x = c("unaffable", "unaffableun", "unknown territory"), 
+                 vocabulary = c("un", "##aff", "##able", "##un"),
+                 type = "ids") 
 }
