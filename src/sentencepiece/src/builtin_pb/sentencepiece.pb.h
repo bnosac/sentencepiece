@@ -504,7 +504,7 @@ class NBestSentencePieceText : public ::google::protobuf::MessageLite /* @@proto
 
 #ifdef __GNUC__
   #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wstrict-aliasing"
+  //#pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif  // __GNUC__
 // SentencePieceText_SentencePiece
 

@@ -1,3 +1,4 @@
+#include <Rcpp.h>
 // Copyright 2016 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -107,7 +108,7 @@ class Die {
  public:
   explicit Die(bool die) : die_(die) {}
   ~Die() {
-    std::cerr << std::endl;
+    Rcpp::Rcout << std::endl;
     if (die_) {
       Abort();
     }
@@ -121,7 +122,7 @@ class Die {
 template <typename T>
 T &&CheckNotNull(const char *file, int line, const char *exprtext, T &&t) {
   if (t == nullptr) {
-    std::cerr << file << "(" << line << ") " << exprtext;
+    Rcpp::Rcout << file << "(" << line << ") " << exprtext;
     Abort();
   }
   return std::forward<T>(t);
@@ -156,14 +157,14 @@ inline const char *BaseName(const char *path) {
       : ::sentencepiece::error::Die(                                         \
             ::sentencepiece::logging::LOG_##severity >=                      \
             ::sentencepiece::logging::LOG_FATAL) &                           \
-            std::cerr << ::sentencepiece::logging::BaseName(__FILE__) << "(" \
+            Rcpp::Rcout << ::sentencepiece::logging::BaseName(__FILE__) << "(" \
                       << __LINE__ << ") "                                    \
                       << "LOG(" << #severity << ") "
 
 #define CHECK(condition)                                                      \
   (condition) ? 0                                                             \
               : ::sentencepiece::error::Die(true) &                           \
-                    std::cerr << ::sentencepiece::logging::BaseName(__FILE__) \
+                    Rcpp::Rcout << ::sentencepiece::logging::BaseName(__FILE__) \
                               << "(" << __LINE__ << ") [" << #condition       \
                               << "] "
 
@@ -179,7 +180,7 @@ inline const char *BaseName(const char *path) {
       ::sentencepiece::logging::BaseName(__FILE__), __LINE__, \
       "'" #val "' Must be non NULL", (val))
 
-#define FRIEND_TEST(a, b) friend class a##_Test_##b;
+//#define FRIEND_TEST(a, b) friend class a##_Test_##b;
 
 #define CHECK_OK(expr)                         \
   do {                                         \

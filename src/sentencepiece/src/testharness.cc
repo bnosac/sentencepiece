@@ -1,3 +1,4 @@
+#include <Rcpp.h>
 // Copyright 2016 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,17 +53,17 @@ bool RegisterTest(const char *base, const char *name, void (*func)()) {
 int RunAllTests() {
   int num = 0;
   if (tests == nullptr) {
-    std::cerr << "No tests are found" << std::endl;
+    Rcpp::Rcout << "No tests are found" << std::endl;
     return 0;
   }
 
   for (const Test &t : *(tests)) {
-    std::cerr << "[ RUN      ] " << t.base << "." << t.name << std::endl;
+    Rcpp::Rcout << "[ RUN      ] " << t.base << "." << t.name << std::endl;
     (*t.func)();
-    std::cerr << "[       OK ] " << t.base << "." << t.name << std::endl;
+    Rcpp::Rcout << "[       OK ] " << t.base << "." << t.name << std::endl;
     ++num;
   }
-  std::cerr << "==== PASSED " << num << " tests" << std::endl;
+  Rcpp::Rcout << "==== PASSED " << num << " tests" << std::endl;
 
   return 0;
 }

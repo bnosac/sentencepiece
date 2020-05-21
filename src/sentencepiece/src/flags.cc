@@ -1,3 +1,4 @@
+#include <Rcpp.h>
 // Copyright 2016 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -205,15 +206,15 @@ void ParseCommandLineFlags(int argc, char **argv,
       continue;
     }
     if (key == "help") {
-      std::cout << PrintHelp(argv[0]);
+      Rcpp::Rcout << PrintHelp(argv[0]);
       error::Exit(0);
     } else if (key == "version") {
-      std::cout << PACKAGE_STRING << " " << VERSION << std::endl;
+      Rcpp::Rcout << PACKAGE_STRING << " " << VERSION << std::endl;
       error::Exit(0);
     } else if (key == "minloglevel") {
       flags::SetMinLogLevel(atoi(value.c_str()));
     } else if (!SetFlag(key, value)) {
-      std::cerr << "Unknown/Invalid flag " << key << "\n\n"
+      Rcpp::Rcout << "Unknown/Invalid flag " << key << "\n\n"
                 << PrintHelp(argv[0]);
       error::Exit(1);
     }

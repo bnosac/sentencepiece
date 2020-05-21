@@ -115,7 +115,7 @@ class Builder {
                                    const CharsMap &chars_map);
 
  private:
-  FRIEND_TEST(BuilderTest, RemoveRedundantMapTest);
+//  FRIEND_TEST(BuilderTest, RemoveRedundantMapTest);
 
   // Removes redundant rules from `chars_map`.
   // When char_maps have "aa" => "bb" and "a" => "b", the first

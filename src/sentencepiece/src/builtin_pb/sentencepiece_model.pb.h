@@ -1479,7 +1479,7 @@ class ModelProto : public ::google::protobuf::MessageLite /* @@protoc_insertion_
 
 #ifdef __GNUC__
   #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wstrict-aliasing"
+  //#pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif  // __GNUC__
 // TrainerSpec
 
