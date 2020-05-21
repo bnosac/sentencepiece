@@ -4,8 +4,13 @@
 \alias{wordpiece_encode}
 \title{Wordpiece encoding}
 \usage{
-wordpiece_encode(x, vocabulary = character(), type = c("subwords",
-  "ids"), unk_token = "[UNK]", max_input_chars_per_word = 100L)
+wordpiece_encode(
+  x,
+  vocabulary = character(),
+  type = c("subwords", "ids"),
+  unk_token = "[UNK]",
+  max_input_chars_per_word = 100L
+)
 }
 \arguments{
 \item{x}{a character vector with text which can be splitted based on white space to obtain words}

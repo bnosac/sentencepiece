@@ -4,9 +4,15 @@
 \alias{sentencepiece}
 \title{Construct a Sentencepiece model}
 \usage{
-sentencepiece(x, type = c("bpe", "char", "unigram", "word"),
-  vocab_size = 8000, coverage = 0.9999,
-  model_prefix = "sentencepiece", threads = 1L, args)
+sentencepiece(
+  x,
+  type = c("bpe", "char", "unigram", "word"),
+  vocab_size = 8000,
+  coverage = 0.9999,
+  model_prefix = "sentencepiece",
+  threads = 1L,
+  args
+)
 }
 \arguments{
 \item{x}{a character vector of path(s) to the text files containing training data}
@@ -34,6 +40,11 @@ an object of class \code{sentencepiece} which is defined at \code{\link{sentence
 Construct a Sentencepiece model on text.
 }
 \examples{
+\dontshow{
+wd <- getwd()
+setwd(tempdir())
+}
+
 library(tokenizers.bpe)
 data(belgium_parliament, package = "tokenizers.bpe")
 writeLines(belgium_parliament$text, con = "traindata.txt")
@@ -41,7 +52,7 @@ model <- sentencepiece("traindata.txt", type = "char", vocab_size = 10)
 model <- sentencepiece("traindata.txt", type = "unigram", vocab_size = 10)
 model <- sentencepiece("traindata.txt", type = "bpe", vocab_size = 10)
 
-\dontrun{
+\donttest{
 model <- sentencepiece("traindata.txt", type = "char")
 model <- sentencepiece("traindata.txt", type = "unigram", vocab_size = 20000)
 model <- sentencepiece("traindata.txt", type = "bpe", vocab_size = 4000)
@@ -55,10 +66,14 @@ sentencepiece_encode(model, x = txt, type = "subwords")
 sentencepiece_encode(model, x = txt, type = "ids")
 }
 
+\dontshow{
 # clean up for CRAN
 file.remove("sentencepiece.model")
 file.remove("sentencepiece.vocab")
 file.remove("traindata.txt")
+wd <- getwd()
+setwd(wd)
+}
 }
 \seealso{
 \code{\link{sentencepiece_load_model}}

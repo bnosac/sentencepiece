@@ -4,8 +4,12 @@
 \alias{sentencepiece_download_model}
 \title{Download a Sentencepiece model}
 \usage{
-sentencepiece_download_model(language, vocab_size, dim,
-  model_dir = system.file(package = "sentencepiece", "models"))
+sentencepiece_download_model(
+  language,
+  vocab_size,
+  dim,
+  model_dir = system.file(package = "sentencepiece", "models")
+)
 }
 \arguments{
 \item{language}{a character string with the language name. This can be either a plain language or a wikipedia shorthand. \cr
@@ -37,7 +41,11 @@ These models contain Byte Pair Encoded models trained with sentencepiece as well
 as Glove embeddings of these Byte Pair subwords. Models for 275 languages are availble.
 }
 \examples{
-\dontrun{
+\dontshow{
+wd <- getwd()
+setwd(tempdir())
+}
+\donttest{
 
 ##
 ## Download only the tokeniser model
@@ -66,9 +74,13 @@ dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 25,
                                    model_dir = tempdir())
 str(dl)
 
+\dontshow{
 # clean up for CRAN
 file.remove(dl$file_model)
 file.remove(dl$glove$file_model)
+invisible(file.remove(list.files(getwd())))
+setwd(wd)
+}
 }
 \seealso{
 \code{\link{sentencepiece_load_model}}

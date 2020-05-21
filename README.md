@@ -20,6 +20,7 @@ The R package allows you to
 
 ## Installation
 
+- For regular users, install the package from your local CRAN mirror `install.packages("sentencepiece")`
 - For installing the development version of this package: `remotes::install_github("bnosac/sentencepiece")`
 
 Look to the documentation of the functions

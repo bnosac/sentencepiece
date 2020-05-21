@@ -23,7 +23,11 @@ embedding <- system.file(package = "sentencepiece", "models",
 embedding <- read_word2vec(embedding)
 head(embedding, 10)
 
-\dontrun{
+\dontshow{
+wd <- getwd()
+setwd(tempdir())
+}
+\donttest{
 
 ## English
 dl <- sentencepiece_download_model("en", vocab_size = 5000, dim = 100)
@@ -37,6 +41,11 @@ embedding <- read_word2vec(dl$glove$file_model)
 ## Vlaams
 dl <- sentencepiece_download_model("Vlaams", vocab_size = 50000, dim = 25)
 embedding <- read_word2vec(dl$glove$file_model)
+}
+\dontshow{
+# clean up for CRAN
+invisible(file.remove(list.files(getwd())))
+setwd(wd)
 }
 }
 \seealso{

@@ -24,7 +24,11 @@
 #' @seealso \code{\link{sentencepiece_load_model}}
 #' @export
 #' @examples
-#' \dontrun{
+#' \dontshow{
+#' wd <- getwd()
+#' setwd(tempdir())
+#' }
+#' \donttest{
 #' 
 #' ##
 #' ## Download only the tokeniser model
@@ -53,9 +57,13 @@
 #'                                    model_dir = tempdir())
 #' str(dl)
 #' 
+#' \dontshow{
 #' # clean up for CRAN
 #' file.remove(dl$file_model)
 #' file.remove(dl$glove$file_model)
+#' invisible(file.remove(list.files(getwd())))
+#' setwd(wd)
+#' }
 sentencepiece_download_model <- function(language, vocab_size, dim, 
                                          model_dir = system.file(package = "sentencepiece", "models")){
   type <- "bpemb"
@@ -143,7 +151,11 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
 #' embedding <- read_word2vec(embedding)
 #' head(embedding, 10)
 #' 
-#' \dontrun{
+#' \dontshow{
+#' wd <- getwd()
+#' setwd(tempdir())
+#' }
+#' \donttest{
 #' 
 #' ## English
 #' dl <- sentencepiece_download_model("en", vocab_size = 5000, dim = 100)
@@ -157,6 +169,11 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
 #' ## Vlaams
 #' dl <- sentencepiece_download_model("Vlaams", vocab_size = 50000, dim = 25)
 #' embedding <- read_word2vec(dl$glove$file_model)
+#' }
+#' \dontshow{
+#' # clean up for CRAN
+#' invisible(file.remove(list.files(getwd())))
+#' setwd(wd)
 #' }
 read_word2vec <- function(x, encoding = "UTF-8"){
   x <- readLines(x, skipNul = TRUE, encoding = encoding)
