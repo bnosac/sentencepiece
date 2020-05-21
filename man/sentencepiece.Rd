@@ -10,6 +10,7 @@ sentencepiece(
   vocab_size = 8000,
   coverage = 0.9999,
   model_prefix = "sentencepiece",
+  model_dir = getwd(),
   threads = 1L,
   args
 )
@@ -29,6 +30,8 @@ When executing the function 2 files will be created in the current working direc
 sentencepiece.model with the model and sentencepiece.vocab containing the vocabulary of the model. 
 You can change the name of the model by providing the \code{model_prefix} argument.}
 
+\item{model_dir}{directory where the model will be saved. Defaults to the current working directory}
+
 \item{threads}{integer indicating number of threads to use when building the model}
 
 \item{args}{character string with arguments passed on to sentencepiece::SentencePieceTrainer::Train (for expert use only)}
@@ -40,39 +43,38 @@ an object of class \code{sentencepiece} which is defined at \code{\link{sentence
 Construct a Sentencepiece model on text.
 }
 \examples{
-\dontshow{
-wd <- getwd()
-setwd(tempdir())
-}
-
 library(tokenizers.bpe)
 data(belgium_parliament, package = "tokenizers.bpe")
-writeLines(belgium_parliament$text, con = "traindata.txt")
-model <- sentencepiece("traindata.txt", type = "char", vocab_size = 10)
-model <- sentencepiece("traindata.txt", type = "unigram", vocab_size = 10)
-model <- sentencepiece("traindata.txt", type = "bpe", vocab_size = 10)
+path   <- "traindata.txt" 
+folder <- getwd() 
+\dontshow{
+path   <- tempfile("traindata_", fileext = ".txt")
+folder <- tempdir()
+}
+writeLines(belgium_parliament$text, con = path)
+model <- sentencepiece(path, type = "char", vocab_size = 10, model_dir = folder)
+model <- sentencepiece(path, type = "unigram", vocab_size = 10, model_dir = folder)
+model <- sentencepiece(path, type = "bpe", vocab_size = 10, model_dir = folder)
 
 \donttest{
-model <- sentencepiece("traindata.txt", type = "char")
-model <- sentencepiece("traindata.txt", type = "unigram", vocab_size = 20000)
-model <- sentencepiece("traindata.txt", type = "bpe", vocab_size = 4000)
+model <- sentencepiece(path, type = "char", model_dir = folder)
+model <- sentencepiece(path, type = "unigram", vocab_size = 20000, model_dir = folder)
+model <- sentencepiece(path, type = "bpe", vocab_size = 4000, model_dir = folder)
 
 txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
          "On est d'accord sur le prix de la biere?")
 sentencepiece_encode(model, x = txt, type = "subwords")
 sentencepiece_encode(model, x = txt, type = "ids")
-model <- sentencepiece_load_model("sentencepiece.model")
+model <- sentencepiece_load_model(file.path(folder, "sentencepiece.model"))
 sentencepiece_encode(model, x = txt, type = "subwords")
 sentencepiece_encode(model, x = txt, type = "ids")
 }
 
 \dontshow{
 # clean up for CRAN
-file.remove("sentencepiece.model")
-file.remove("sentencepiece.vocab")
-file.remove("traindata.txt")
-wd <- getwd()
-setwd(wd)
+file.remove(file.path(folder, "sentencepiece.model"))
+file.remove(file.path(folder, "sentencepiece.vocab"))
+file.remove(path)
 }
 }
 \seealso{

@@ -4,7 +4,7 @@
 #' @description Download pretrained models built on Wikipedia
 #' made available at \url{https://nlp.h-its.org/bpemb} through \url{https://github.com/bheinzerling/bpemb}. 
 #' These models contain Byte Pair Encoded models trained with sentencepiece as well
-#' as Glove embeddings of these Byte Pair subwords. Models for 275 languages are availble.
+#' as Glove embeddings of these Byte Pair subwords. Models for 275 languages are available.
 #' @param language a character string with the language name. This can be either a plain language or a wikipedia shorthand. \cr
 #' Possible values can be found by looking at the examples or typing sentencepiece:::.bpemb$languages \cr
 #' If you provide multi it downloads the multilingual model available at \url{https://nlp.h-its.org/bpemb/multi}
@@ -24,29 +24,29 @@
 #' @seealso \code{\link{sentencepiece_load_model}}
 #' @export
 #' @examples
+#' path <- getwd()
 #' \dontshow{
-#' wd <- getwd()
-#' setwd(tempdir())
+#' path <- tempdir()
 #' }
 #' \donttest{
 #' 
 #' ##
 #' ## Download only the tokeniser model
 #' ##
-#' dl <- sentencepiece_download_model("Russian", vocab_size = 50000)
-#' dl <- sentencepiece_download_model("English", vocab_size = 100000)
-#' dl <- sentencepiece_download_model("French", vocab_size = 25000)
-#' dl <- sentencepiece_download_model("multi", vocab_size = 320000)
-#' dl <- sentencepiece_download_model("Vlaams", vocab_size = 1000)
-#' dl <- sentencepiece_download_model("Dutch", vocab_size = 25000)
-#' dl <- sentencepiece_download_model("nl", vocab_size = 25000)
+#' dl <- sentencepiece_download_model("Russian", vocab_size = 50000, model_dir = path)
+#' dl <- sentencepiece_download_model("English", vocab_size = 100000, model_dir = path)
+#' dl <- sentencepiece_download_model("French", vocab_size = 25000, model_dir = path)
+#' dl <- sentencepiece_download_model("multi", vocab_size = 320000, model_dir = path)
+#' dl <- sentencepiece_download_model("Vlaams", vocab_size = 1000, model_dir = path)
+#' dl <- sentencepiece_download_model("Dutch", vocab_size = 25000, model_dir = path)
+#' dl <- sentencepiece_download_model("nl", vocab_size = 25000, model_dir = path)
 #' str(dl)
 #' model     <- sentencepiece_load_model(dl$file_model)
 #' 
 #' ##
 #' ## Download the tokeniser model + Glove embeddings of Byte Pairs
 #' ##
-#' dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50)
+#' dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50, model_dir = path)
 #' str(dl)
 #' model     <- sentencepiece_load_model(dl$file_model)
 #' embedding <- read_word2vec(dl$glove$file_model)
@@ -59,10 +59,8 @@
 #' 
 #' \dontshow{
 #' # clean up for CRAN
-#' file.remove(dl$file_model)
-#' file.remove(dl$glove$file_model)
-#' invisible(file.remove(list.files(getwd())))
-#' setwd(wd)
+#' f <- list.files(tempdir(), pattern = ".vocab$|.model$", full.names = TRUE)
+#' invisible(file.remove(f))
 #' }
 sentencepiece_download_model <- function(language, vocab_size, dim, 
                                          model_dir = system.file(package = "sentencepiece", "models")){
@@ -137,52 +135,3 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
   models
 }
 
-
-#' @title Read a word2vec embedding file
-#' @description  Read a word2vec embedding file
-#' @param x path to the file
-#' @param encoding character string with the Encoding of the file. Defaults to 'UTF-8'. This is passed on to \code{readLines} 
-#' @return a matrix with one row per token containing the embedding of the token
-#' @seealso \code{\link{readLines}}
-#' @export
-#' @examples
-#' embedding <- system.file(package = "sentencepiece", "models", 
-#'                          "nl.wiki.bpe.vs1000.d25.w2v.txt")
-#' embedding <- read_word2vec(embedding)
-#' head(embedding, 10)
-#' 
-#' \dontshow{
-#' wd <- getwd()
-#' setwd(tempdir())
-#' }
-#' \donttest{
-#' 
-#' ## English
-#' dl <- sentencepiece_download_model("en", vocab_size = 5000, dim = 100)
-#' embedding <- read_word2vec(dl$glove$file_model)
-#' 
-#' ## Dutch
-#' dl <- sentencepiece_download_model("nl", vocab_size = 10000, dim = 25)
-#' dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50)
-#' embedding <- read_word2vec(dl$glove$file_model)
-#' 
-#' ## Vlaams
-#' dl <- sentencepiece_download_model("Vlaams", vocab_size = 50000, dim = 25)
-#' embedding <- read_word2vec(dl$glove$file_model)
-#' }
-#' \dontshow{
-#' # clean up for CRAN
-#' invisible(file.remove(list.files(getwd())))
-#' setwd(wd)
-#' }
-read_word2vec <- function(x, encoding = "UTF-8"){
-  x <- readLines(x, skipNul = TRUE, encoding = encoding)
-  size <- x[1]
-  size <- as.numeric(unlist(strsplit(size, " ")))
-  x <- x[-1]
-  x <- strsplit(x, " ")
-  token <- sapply(x, FUN=function(x) x[1])
-  emb <- lapply(x, FUN=function(x) as.numeric(x[-1]))
-  embedding <- matrix(data = unlist(emb), nrow = size[1], ncol = size[2], dimnames = list(token), byrow = TRUE)
-  embedding
-}

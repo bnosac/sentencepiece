@@ -38,32 +38,32 @@ a list with elements
 Download pretrained models built on Wikipedia
 made available at \url{https://nlp.h-its.org/bpemb} through \url{https://github.com/bheinzerling/bpemb}. 
 These models contain Byte Pair Encoded models trained with sentencepiece as well
-as Glove embeddings of these Byte Pair subwords. Models for 275 languages are availble.
+as Glove embeddings of these Byte Pair subwords. Models for 275 languages are available.
 }
 \examples{
+path <- getwd()
 \dontshow{
-wd <- getwd()
-setwd(tempdir())
+path <- tempdir()
 }
 \donttest{
 
 ##
 ## Download only the tokeniser model
 ##
-dl <- sentencepiece_download_model("Russian", vocab_size = 50000)
-dl <- sentencepiece_download_model("English", vocab_size = 100000)
-dl <- sentencepiece_download_model("French", vocab_size = 25000)
-dl <- sentencepiece_download_model("multi", vocab_size = 320000)
-dl <- sentencepiece_download_model("Vlaams", vocab_size = 1000)
-dl <- sentencepiece_download_model("Dutch", vocab_size = 25000)
-dl <- sentencepiece_download_model("nl", vocab_size = 25000)
+dl <- sentencepiece_download_model("Russian", vocab_size = 50000, model_dir = path)
+dl <- sentencepiece_download_model("English", vocab_size = 100000, model_dir = path)
+dl <- sentencepiece_download_model("French", vocab_size = 25000, model_dir = path)
+dl <- sentencepiece_download_model("multi", vocab_size = 320000, model_dir = path)
+dl <- sentencepiece_download_model("Vlaams", vocab_size = 1000, model_dir = path)
+dl <- sentencepiece_download_model("Dutch", vocab_size = 25000, model_dir = path)
+dl <- sentencepiece_download_model("nl", vocab_size = 25000, model_dir = path)
 str(dl)
 model     <- sentencepiece_load_model(dl$file_model)
 
 ##
 ## Download the tokeniser model + Glove embeddings of Byte Pairs
 ##
-dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50)
+dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50, model_dir = path)
 str(dl)
 model     <- sentencepiece_load_model(dl$file_model)
 embedding <- read_word2vec(dl$glove$file_model)
@@ -76,10 +76,8 @@ str(dl)
 
 \dontshow{
 # clean up for CRAN
-file.remove(dl$file_model)
-file.remove(dl$glove$file_model)
-invisible(file.remove(list.files(getwd())))
-setwd(wd)
+f <- list.files(tempdir(), pattern = ".vocab$|.model$", full.names = TRUE)
+invisible(file.remove(f))
 }
 }
 \seealso{
