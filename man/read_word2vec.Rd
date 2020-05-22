@@ -28,7 +28,6 @@ path <- getwd()
 path <- tempdir()
 }
 \donttest{
-
 ## English
 dl <- sentencepiece_download_model("en", vocab_size = 5000, dim = 100, model_dir = path)
 embedding <- read_word2vec(dl$glove$file_model)

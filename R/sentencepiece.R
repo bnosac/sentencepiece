@@ -26,10 +26,11 @@
 #' folder <- tempdir()
 #' }
 #' writeLines(belgium_parliament$text, con = path)
+#' \dontshow{
 #' model <- sentencepiece(path, type = "char", vocab_size = 10, model_dir = folder)
 #' model <- sentencepiece(path, type = "unigram", vocab_size = 10, model_dir = folder)
 #' model <- sentencepiece(path, type = "bpe", vocab_size = 10, model_dir = folder)
-#' 
+#' }
 #' \donttest{
 #' model <- sentencepiece(path, type = "char", model_dir = folder)
 #' model <- sentencepiece(path, type = "unigram", vocab_size = 20000, model_dir = folder)
@@ -39,6 +40,8 @@
 #'          "On est d'accord sur le prix de la biere?")
 #' sentencepiece_encode(model, x = txt, type = "subwords")
 #' sentencepiece_encode(model, x = txt, type = "ids")
+#' 
+#' 
 #' model <- sentencepiece_load_model(file.path(folder, "sentencepiece.model"))
 #' sentencepiece_encode(model, x = txt, type = "subwords")
 #' sentencepiece_encode(model, x = txt, type = "ids")
