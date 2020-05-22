@@ -76,7 +76,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // wordpiece_encode_as_subwords
-Rcpp::StringVector wordpiece_encode_as_subwords(std::string x, std::vector<std::string> vocabulary, std::string unk_token, int max_input_chars_per_word);
+Rcpp::StringVector wordpiece_encode_as_subwords(std::string x, std::vector<std::string> vocabulary, std::string unk_token, unsigned int max_input_chars_per_word);
 RcppExport SEXP _sentencepiece_wordpiece_encode_as_subwords(SEXP xSEXP, SEXP vocabularySEXP, SEXP unk_tokenSEXP, SEXP max_input_chars_per_wordSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -84,7 +84,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::string >::type x(xSEXP);
     Rcpp::traits::input_parameter< std::vector<std::string> >::type vocabulary(vocabularySEXP);
     Rcpp::traits::input_parameter< std::string >::type unk_token(unk_tokenSEXP);
-    Rcpp::traits::input_parameter< int >::type max_input_chars_per_word(max_input_chars_per_wordSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type max_input_chars_per_word(max_input_chars_per_wordSEXP);
     rcpp_result_gen = Rcpp::wrap(wordpiece_encode_as_subwords(x, vocabulary, unk_token, max_input_chars_per_word));
     return rcpp_result_gen;
 END_RCPP
