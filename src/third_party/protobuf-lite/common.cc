@@ -222,6 +222,21 @@ LogMessage& LogMessage::operator<<(const uint128& value) {
   return *this;
 }
 
+LogMessage& LogMessage::operator<<(long long value) {
+  std::ostringstream str;
+  str << std::to_string(value);
+  message_ += str.str();
+  return *this;
+}
+
+LogMessage& LogMessage::operator<<(unsigned long long value) {
+  std::ostringstream str;
+  str << std::to_string(value);
+  message_ += str.str();
+  return *this;
+}
+
+
 // Since this is just for logging, we don't care if the current locale changes
 // the results -- in fact, we probably prefer that.  So we use snprintf()
 // instead of Simple*toa().
@@ -246,13 +261,13 @@ DECLARE_STREAM_OPERATOR(long         , "%ld")
 DECLARE_STREAM_OPERATOR(unsigned long, "%lu")
 DECLARE_STREAM_OPERATOR(double       , "%g" )
 DECLARE_STREAM_OPERATOR(void*        , "%p" )
-#ifdef _MSC_VER
-    DECLARE_STREAM_OPERATOR(long long         , "%I64d")
-    DECLARE_STREAM_OPERATOR(unsigned long long, "%I64u")
-#else
-    DECLARE_STREAM_OPERATOR(long long         , "%lld")
-    DECLARE_STREAM_OPERATOR(unsigned long long, "%llu")
-#endif
+//#ifdef _MSC_VER
+//    DECLARE_STREAM_OPERATOR(long long         , "%I64d")
+//    DECLARE_STREAM_OPERATOR(unsigned long long, "%I64u")
+//#else
+//    DECLARE_STREAM_OPERATOR(long long         , "%lld")
+//    DECLARE_STREAM_OPERATOR(unsigned long long, "%llu")
+//#endif
 #undef DECLARE_STREAM_OPERATOR
 
 LogMessage::LogMessage(LogLevel level, const char* filename, int line)
