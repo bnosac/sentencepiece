@@ -13,7 +13,7 @@ Rcpp::StringVector wordpiece_encode_as_subwords(std::string x, std::vector<std::
     std::vector<std::string> sub_tokens;
     
     while(start < len){
-      int end = len;
+      unsigned int end = len;
       std::string cur_substr = "";
       std::string substr;
       while(start < end){
