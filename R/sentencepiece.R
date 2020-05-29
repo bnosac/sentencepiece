@@ -13,6 +13,7 @@
 #' @param model_dir directory where the model will be saved. Defaults to the temporary directory (tempdir())
 #' @param threads integer indicating number of threads to use when building the model
 #' @param args character string with arguments passed on to sentencepiece::SentencePieceTrainer::Train (for expert use only)
+#' @param verbose logical indicating to show progress of sentencepiece training. Defaults to \code{TRUE}.
 #' @return an object of class \code{sentencepiece} which is defined at \code{\link{sentencepiece_load_model}}
 #' @seealso \code{\link{sentencepiece_load_model}}
 #' @export
@@ -32,9 +33,12 @@
 #' model <- sentencepiece(path, type = "bpe", vocab_size = 10, model_dir = folder)
 #' }
 #' \donttest{
-#' model <- sentencepiece(path, type = "char", model_dir = folder)
-#' model <- sentencepiece(path, type = "unigram", vocab_size = 20000, model_dir = folder)
-#' model <- sentencepiece(path, type = "bpe", vocab_size = 4000, model_dir = folder)
+#' model <- sentencepiece(path, type = "char", 
+#'                        model_dir = folder, verbose = TRUE)
+#' model <- sentencepiece(path, type = "unigram", vocab_size = 20000, 
+#'                        model_dir = folder, verbose = TRUE)
+#' model <- sentencepiece(path, type = "bpe", vocab_size = 4000, 
+#'                        model_dir = folder, verbose = TRUE)
 #' 
 #' txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
 #'          "On est d'accord sur le prix de la biere?")
@@ -55,7 +59,7 @@
 #' }
 sentencepiece <- function(x, type = c("bpe", "char", "unigram", "word"), vocab_size = 8000, coverage = 0.9999, 
                           model_prefix = "sentencepiece", 
-                          model_dir = tempdir(), threads = 1L, args){
+                          model_dir = tempdir(), threads = 1L, args, verbose = FALSE){
   oldwd <- getwd()
   on.exit(setwd(oldwd))
   setwd(model_dir)
@@ -76,7 +80,11 @@ sentencepiece <- function(x, type = c("bpe", "char", "unigram", "word"), vocab_s
       stop("Please provide at least model_prefix")
     }
   }
-  result <- spc_train(args)
+  if(verbose){
+    result <- spc_train(args)  
+  }else{
+    msg <- capture.output(result <- spc_train(args))
+  }
   model <- file.path(getwd(), sprintf("%s.model", model_prefix))  
   result <- sentencepiece_load_model(file = model)
   result

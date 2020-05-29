@@ -12,7 +12,8 @@ sentencepiece(
   model_prefix = "sentencepiece",
   model_dir = tempdir(),
   threads = 1L,
-  args
+  args,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -35,6 +36,8 @@ You can change the name of the model by providing the \code{model_prefix} argume
 \item{threads}{integer indicating number of threads to use when building the model}
 
 \item{args}{character string with arguments passed on to sentencepiece::SentencePieceTrainer::Train (for expert use only)}
+
+\item{verbose}{logical indicating to show progress of sentencepiece training. Defaults to \code{TRUE}.}
 }
 \value{
 an object of class \code{sentencepiece} which is defined at \code{\link{sentencepiece_load_model}}
@@ -58,9 +61,12 @@ model <- sentencepiece(path, type = "unigram", vocab_size = 10, model_dir = fold
 model <- sentencepiece(path, type = "bpe", vocab_size = 10, model_dir = folder)
 }
 \donttest{
-model <- sentencepiece(path, type = "char", model_dir = folder)
-model <- sentencepiece(path, type = "unigram", vocab_size = 20000, model_dir = folder)
-model <- sentencepiece(path, type = "bpe", vocab_size = 4000, model_dir = folder)
+model <- sentencepiece(path, type = "char", 
+                       model_dir = folder, verbose = TRUE)
+model <- sentencepiece(path, type = "unigram", vocab_size = 20000, 
+                       model_dir = folder, verbose = TRUE)
+model <- sentencepiece(path, type = "bpe", vocab_size = 4000, 
+                       model_dir = folder, verbose = TRUE)
 
 txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
          "On est d'accord sur le prix de la biere?")
