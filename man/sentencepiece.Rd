@@ -37,7 +37,7 @@ You can change the name of the model by providing the \code{model_prefix} argume
 
 \item{args}{character string with arguments passed on to sentencepiece::SentencePieceTrainer::Train (for expert use only)}
 
-\item{verbose}{logical indicating to show progress of sentencepiece training. Defaults to \code{TRUE}.}
+\item{verbose}{logical indicating to show progress of sentencepiece training. Defaults to \code{FALSE}.}
 }
 \value{
 an object of class \code{sentencepiece} which is defined at \code{\link{sentencepiece_load_model}}

@@ -13,7 +13,7 @@
 #' @param model_dir directory where the model will be saved. Defaults to the temporary directory (tempdir())
 #' @param threads integer indicating number of threads to use when building the model
 #' @param args character string with arguments passed on to sentencepiece::SentencePieceTrainer::Train (for expert use only)
-#' @param verbose logical indicating to show progress of sentencepiece training. Defaults to \code{TRUE}.
+#' @param verbose logical indicating to show progress of sentencepiece training. Defaults to \code{FALSE}.
 #' @return an object of class \code{sentencepiece} which is defined at \code{\link{sentencepiece_load_model}}
 #' @seealso \code{\link{sentencepiece_load_model}}
 #' @export
