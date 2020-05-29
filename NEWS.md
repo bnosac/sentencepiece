@@ -1,3 +1,7 @@
+## CHANGES IN sentencepiece VERSION 0.1.1
+
+- Added verbose argument in sentencepiece
+
 ## CHANGES IN sentencepiece VERSION 0.1.0
 
 - Initial package based on https://github.com/google/sentencepiece release v0.1.84 commit  2424d82d396b43b2556203c592e48a621ef10f3c

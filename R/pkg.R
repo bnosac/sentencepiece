@@ -1,4 +1,4 @@
 #' @importFrom Rcpp evalCpp
-#' @importFrom utils head
+#' @importFrom utils head capture.output
 #' @useDynLib sentencepiece
 NULL
