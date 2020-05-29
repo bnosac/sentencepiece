@@ -12,11 +12,11 @@ Authors@R: c(
     person('Daisuke Okanohara', role = c('ctb', 'cph'), comment = "Files at src/third_party/esaxx (MIT License)"),
     person('Benjamin Heinzerling', role = c('ctb', 'cph'), comment = "Files data/models/nl.wiki.bpe.vs1000.d25.w2v.txt and data/models/nl.wiki.bpe.vs1000.model (MIT License)"))
 Maintainer: Jan Wijffels <jwijffels@bnosac.be>
-Description: Unsupervised text tokenizer allowing to perform Byte Pair Encoding and Unigram modelling. 
+Description: Unsupervised text tokenizer allowing to perform byte pair encoding and unigram modelling. 
     Wraps the 'sentencepiece' library <https://github.com/google/sentencepiece> which provides a language independent tokenizer to split text in words and smaller subword units. 
-    The techniques are explained in the paper 'SentencePiece: A simple and language independent subword tokenizer and detokenizer for Neural Text Processing' by Taku Kudo and John Richardson (2018) <10.18653/v1/D18-2012>.
-    Provides as well straightforward access to pretrained Byte Pair Encoding models and 'Word2vec' subword embeddings trained on Wikipedia 
-    as described in 'BPEmb: Tokenization-free Pre-trained Subword Embeddings in 275 Languages' by Benjamin Heinzerling and Michael Strube (2018) <http://www.lrec-conf.org/proceedings/lrec2018/pdf/1049.pdf>.
+    The techniques are explained in the paper "SentencePiece: A simple and language independent subword tokenizer and detokenizer for Neural Text Processing" by Taku Kudo and John Richardson (2018) <doi:10.18653/v1/D18-2012>.
+    Provides as well straightforward access to pretrained byte pair encoding models and subword embeddings trained on Wikipedia 
+    as described in "BPEmb: Tokenization-free Pre-trained Subword Embeddings in 275 Languages" by Benjamin Heinzerling and Michael Strube (2018) <http://www.lrec-conf.org/proceedings/lrec2018/pdf/1049.pdf>.
 URL: https://github.com/bnosac/sentencepiece
 License: MPL-2.0
 Encoding: UTF-8
