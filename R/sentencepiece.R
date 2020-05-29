@@ -7,10 +7,10 @@
 #' @param vocab_size integer indicating the number of tokens in the final vocabulary. Defaults to 8000.
 #' @param coverage fraction of characters covered by the model. Must be in the range [0, 1]. A good value to use is about 0.9999.
 #' @param model_prefix character string with the name of the model. Defaults to 'sentencepiece'.
-#' When executing the function 2 files will be created in the current working directory, namely
+#' When executing the function 2 files will be created in the directory specified by \code{model_dir}, namely
 #' sentencepiece.model with the model and sentencepiece.vocab containing the vocabulary of the model. 
 #' You can change the name of the model by providing the \code{model_prefix} argument.
-#' @param model_dir directory where the model will be saved. Defaults to the current working directory
+#' @param model_dir directory where the model will be saved. Defaults to the temporary directory (tempdir())
 #' @param threads integer indicating number of threads to use when building the model
 #' @param args character string with arguments passed on to sentencepiece::SentencePieceTrainer::Train (for expert use only)
 #' @return an object of class \code{sentencepiece} which is defined at \code{\link{sentencepiece_load_model}}
@@ -55,7 +55,7 @@
 #' }
 sentencepiece <- function(x, type = c("bpe", "char", "unigram", "word"), vocab_size = 8000, coverage = 0.9999, 
                           model_prefix = "sentencepiece", 
-                          model_dir = getwd(), threads = 1L, args){
+                          model_dir = tempdir(), threads = 1L, args){
   oldwd <- getwd()
   on.exit(setwd(oldwd))
   setwd(model_dir)

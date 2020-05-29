@@ -10,7 +10,7 @@ sentencepiece(
   vocab_size = 8000,
   coverage = 0.9999,
   model_prefix = "sentencepiece",
-  model_dir = getwd(),
+  model_dir = tempdir(),
   threads = 1L,
   args
 )
@@ -26,11 +26,11 @@ Unigram encoding or pretokenised word encoding. Defaults to 'bpe' (Byte Pair Enc
 \item{coverage}{fraction of characters covered by the model. Must be in the range [0, 1]. A good value to use is about 0.9999.}
 
 \item{model_prefix}{character string with the name of the model. Defaults to 'sentencepiece'.
-When executing the function 2 files will be created in the current working directory, namely
+When executing the function 2 files will be created in the directory specified by \code{model_dir}, namely
 sentencepiece.model with the model and sentencepiece.vocab containing the vocabulary of the model. 
 You can change the name of the model by providing the \code{model_prefix} argument.}
 
-\item{model_dir}{directory where the model will be saved. Defaults to the current working directory}
+\item{model_dir}{directory where the model will be saved. Defaults to the temporary directory (tempdir())}
 
 \item{threads}{integer indicating number of threads to use when building the model}
 
