@@ -1,3 +1,7 @@
+## CHANGES IN sentencepiece VERSION 0.1.2
+
+- Fix for Solaris installation issue which used log of uint64 which is not defined on Solaris
+
 ## CHANGES IN sentencepiece VERSION 0.1.1
 
 - Added verbose argument in sentencepiece

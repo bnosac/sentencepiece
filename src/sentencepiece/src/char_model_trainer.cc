@@ -38,7 +38,7 @@ util::Status Trainer::Train() {
     sum += it.second;
   }
 
-  const float logsum = log(sum);
+  const float logsum = static_cast<float>(log(static_cast<long double>(sum)));
 
   CHECK_OR_RETURN(final_pieces_.empty());
   for (const auto &it : Sorted(required_chars_)) {
@@ -47,7 +47,7 @@ util::Status Trainer::Train() {
       break;
     }
     final_pieces_.emplace_back(string_util::UnicodeCharToUTF8(it.first),
-                               log(it.second) - logsum);
+                               static_cast<float>(log(static_cast<long double>(it.second))) - logsum);
   }
 
   if (trainer_spec_.use_all_vocab()) {

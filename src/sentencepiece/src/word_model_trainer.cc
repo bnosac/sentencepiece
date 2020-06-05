@@ -48,7 +48,7 @@ util::Status Trainer::Train() {
     sum += it.second;
   }
 
-  const float logsum = log(sum);
+  const float logsum = static_cast<float>(log(static_cast<long double>(sum)));
 
   CHECK_OR_RETURN(final_pieces_.empty());
   for (const auto &it : Sorted(freq)) {
@@ -59,7 +59,7 @@ util::Status Trainer::Train() {
         final_pieces_.size() == static_cast<size_t>(vocab_size)) {
       break;
     }
-    final_pieces_.emplace_back(it.first, log(it.second) - logsum);
+    final_pieces_.emplace_back(it.first, static_cast<float>(log(static_cast<long double>(it.second))) - logsum);
   }
 
   if (trainer_spec_.use_all_vocab()) {
