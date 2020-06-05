@@ -1,6 +1,7 @@
 ## CHANGES IN sentencepiece VERSION 0.1.2
 
-- Fix for Solaris installation issue which used log of uint64 which is not defined on Solaris
+- Fix Solaris installation issue which used log of uint64 which is not defined on Solaris
+- Fix Solaris installation issue related to incorrect usage of pointer as a function 
 
 ## CHANGES IN sentencepiece VERSION 0.1.1
 
