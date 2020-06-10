@@ -15,6 +15,9 @@ repos:
 r_packages:
   - Rcpp
   - tokenizers.bpe
+  
+r_github_packages:
+  - bnosac/word2vec
 
 warnings_are_errors: true
 
