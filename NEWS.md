@@ -1,7 +1,11 @@
+## CHANGES IN sentencepiece VERSION 0.1.3
+
+- Fix Solaris installation issue related to incorrect usage of pointer as a function 
+- Also download the binary model in sentencepiece_download_model as it can be loaded with word2vec::read.wordvectors
+
 ## CHANGES IN sentencepiece VERSION 0.1.2
 
 - Fix Solaris installation issue which used log of uint64 which is not defined on Solaris
-- Fix Solaris installation issue related to incorrect usage of pointer as a function 
 
 ## CHANGES IN sentencepiece VERSION 0.1.1
 

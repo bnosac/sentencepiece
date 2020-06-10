@@ -31,7 +31,8 @@ a list with elements
 \item{url: the url where the Sentencepiece model was fetched from}
 \item{download_failed: logical, indicating if the download failed}
 \item{download_message: a character string with possible download failure information}
-\item{glove: a list with elements file_model, url, download_failed and download_message indicating the path to the Glove embeddings. Only present if the dim argument is provided in the function. Otherwise the embeddings will not be downloaded}
+\item{glove: a list with elements file_model, url, download_failed and download_message indicating the path to the Glove embeddings in txt format. Only present if the dim argument is provided in the function. Otherwise the embeddings will not be downloaded}
+\item{glove.bin: a list with elements file_model, url, download_failed and download_message indicating the path to the Glove embeddings in bin format. Only present if the dim argument is provided in the function. Otherwise the embeddings will not be downloaded}
 }
 }
 \description{

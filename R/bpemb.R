@@ -19,7 +19,8 @@
 #' \item{url: the url where the Sentencepiece model was fetched from}
 #' \item{download_failed: logical, indicating if the download failed}
 #' \item{download_message: a character string with possible download failure information}
-#' \item{glove: a list with elements file_model, url, download_failed and download_message indicating the path to the Glove embeddings. Only present if the dim argument is provided in the function. Otherwise the embeddings will not be downloaded}
+#' \item{glove: a list with elements file_model, url, download_failed and download_message indicating the path to the Glove embeddings in txt format. Only present if the dim argument is provided in the function. Otherwise the embeddings will not be downloaded}
+#' \item{glove.bin: a list with elements file_model, url, download_failed and download_message indicating the path to the Glove embeddings in bin format. Only present if the dim argument is provided in the function. Otherwise the embeddings will not be downloaded}
 #' }
 #' @seealso \code{\link{sentencepiece_load_model}}
 #' @export
@@ -130,6 +131,15 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
       file.remove(result$file_model)
       result$file_model <- file.path(model_dir, filename)
       models$glove <- result  
+      
+      url <- sprintf("https://nlp.h-its.org/bpemb/%s/%s.wiki.bpe.vs%s.d%s.w2v.bin.tar.gz", language, language, vocab_size, dim)
+      to <- file.path(model_dir, basename(url))
+      result <- download_file(url = url, to = to, mode = "wb")
+      filename <- utils::untar(result$file_model, list = TRUE)
+      utils::untar(result$file_model, files = filename, exdir = model_dir)
+      file.remove(result$file_model)
+      result$file_model <- file.path(model_dir, filename)
+      models$glove.bin <- result 
     }
   }
   models
