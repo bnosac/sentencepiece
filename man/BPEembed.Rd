@@ -4,16 +4,22 @@
 \alias{BPEembed}
 \title{Tokenise and embed text alongside a Sentencepiece and Word2vec model}
 \usage{
-BPEembed(file_sentencepiece, file_word2vec, x, normalize = TRUE)
+BPEembed(
+  file_sentencepiece = x$file_model,
+  file_word2vec = x$glove.bin$file_model,
+  x,
+  normalize = TRUE
+)
 }
 \arguments{
 \item{file_sentencepiece}{the path to the file containing the sentencepiece model}
 
 \item{file_word2vec}{the path to the file containing the word2vec embeddings}
 
-\item{x}{the result of a call to \code{\link{sentencepiece_download_model}}}
+\item{x}{the result of a call to \code{\link{sentencepiece_download_model}}. 
+If this is provided, arguments \code{file_sentencepiece} and \code{file_word2vec} will not be used.}
 
-\item{normalize}{passed on to \code{\link[word2vec]{read.wordvectors}}. Defaults to \code{TRUE}.}
+\item{normalize}{passed on to \code{\link[word2vec]{read.wordvectors}} to read in \code{file_word2vec}. Defaults to \code{TRUE}.}
 }
 \value{
 an object of class BPEembed which is a list with elements 

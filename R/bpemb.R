@@ -153,8 +153,9 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
 #' @description Use a sentencepiece model to tokenise text and get the embeddings of these
 #' @param file_sentencepiece the path to the file containing the sentencepiece model
 #' @param file_word2vec the path to the file containing the word2vec embeddings
-#' @param x the result of a call to \code{\link{sentencepiece_download_model}}
-#' @param normalize passed on to \code{\link[word2vec]{read.wordvectors}}. Defaults to \code{TRUE}.
+#' @param x the result of a call to \code{\link{sentencepiece_download_model}}. 
+#' If this is provided, arguments \code{file_sentencepiece} and \code{file_word2vec} will not be used.
+#' @param normalize passed on to \code{\link[word2vec]{read.wordvectors}} to read in \code{file_word2vec}. Defaults to \code{TRUE}.
 #' @return an object of class BPEembed which is a list with elements 
 #' \itemize{
 #' \item{model: a sentencepiece model as loaded with \code{\link{sentencepiece_load_model}}}
@@ -199,7 +200,7 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
 #' predict(encoder, txt, type = "decode") 
 #' txt <- lapply(values, FUN = rownames) 
 #' predict(encoder, txt, type = "decode") 
-BPEembed <- function(file_sentencepiece, file_word2vec, x, normalize = TRUE){
+BPEembed <- function(file_sentencepiece = x$file_model, file_word2vec = x$glove.bin$file_model, x, normalize = TRUE){
   requireNamespace("word2vec")
   if(packageVersion("word2vec") < "0.2.0"){
     stop("This requires word2vec package >= 0.2.0")
@@ -274,8 +275,8 @@ print.BPEembed <- function(x, ...){
 #' predict(encoder, txt, type = "decode") 
 #' txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
 #'          "On est d'accord sur le prix de la biere?")
-#' predict(encoder, txt, type = "tokenize", type = "subwords") 
-#' predict(encoder, txt, type = "tokenize", type = "ids")  
+#' predict(encoder, txt, type = "tokenize", "subwords") 
+#' predict(encoder, txt, type = "tokenize", "ids")  
 predict.BPEembed <- function(object, newdata, type = c("encode", "decode", "tokenize"), ...){
   type <- match.arg(type)
   if(type == "encode"){

@@ -49,8 +49,8 @@ txt <- lapply(values, FUN = rownames)
 predict(encoder, txt, type = "decode") 
 txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
          "On est d'accord sur le prix de la biere?")
-predict(encoder, txt, type = "tokenize", type = "subwords") 
-predict(encoder, txt, type = "tokenize", type = "ids")  
+predict(encoder, txt, type = "tokenize", "subwords") 
+predict(encoder, txt, type = "tokenize", "ids")  
 }
 \seealso{
 \code{\link{BPEembed}}, \code{\link{sentencepiece_decode}}, \code{\link{sentencepiece_encode}}
