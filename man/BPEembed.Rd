@@ -4,7 +4,7 @@
 \alias{BPEembed}
 \title{Tokenise and embed text alongside a Sentencepiece and Word2vec model}
 \usage{
-BPEembed(file_sentencepiece, file_word2vec, x)
+BPEembed(file_sentencepiece, file_word2vec, x, normalize = TRUE)
 }
 \arguments{
 \item{file_sentencepiece}{the path to the file containing the sentencepiece model}
@@ -12,6 +12,8 @@ BPEembed(file_sentencepiece, file_word2vec, x)
 \item{file_word2vec}{the path to the file containing the word2vec embeddings}
 
 \item{x}{the result of a call to \code{\link{sentencepiece_download_model}}}
+
+\item{normalize}{passed on to \code{\link[word2vec]{read.wordvectors}}. Defaults to \code{TRUE}.}
 }
 \value{
 an object of class BPEembed which is a list with elements 
@@ -58,7 +60,7 @@ values
 
 txt <- rownames(values[[1]])
 predict(encoder, txt, type = "decode") 
-txt <- lapply(values, FUN=rownames) 
+txt <- lapply(values, FUN = rownames) 
 predict(encoder, txt, type = "decode") 
 }
 \seealso{

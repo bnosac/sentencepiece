@@ -154,6 +154,7 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
 #' @param file_sentencepiece the path to the file containing the sentencepiece model
 #' @param file_word2vec the path to the file containing the word2vec embeddings
 #' @param x the result of a call to \code{\link{sentencepiece_download_model}}
+#' @param normalize passed on to \code{\link[word2vec]{read.wordvectors}}. Defaults to \code{TRUE}.
 #' @return an object of class BPEembed which is a list with elements 
 #' \itemize{
 #' \item{model: a sentencepiece model as loaded with \code{\link{sentencepiece_load_model}}}
@@ -196,9 +197,9 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
 #' 
 #' txt <- rownames(values[[1]])
 #' predict(encoder, txt, type = "decode") 
-#' txt <- lapply(values, FUN=rownames) 
+#' txt <- lapply(values, FUN = rownames) 
 #' predict(encoder, txt, type = "decode") 
-BPEembed <- function(file_sentencepiece, file_word2vec, x){
+BPEembed <- function(file_sentencepiece, file_word2vec, x, normalize = TRUE){
   requireNamespace("word2vec")
   if(packageVersion("word2vec") < "0.2.0"){
     stop("This requires word2vec package >= 0.2.0")
@@ -216,7 +217,7 @@ BPEembed <- function(file_sentencepiece, file_word2vec, x){
   stopifnot(tools::file_ext(file_word2vec) %in% c("bin", "txt"))
   
   model     <- sentencepiece_load_model(file_sentencepiece)
-  embedding <- word2vec::read.wordvectors(file_word2vec, type = tools::file_ext(file_word2vec))
+  embedding <- word2vec::read.wordvectors(file_word2vec, type = tools::file_ext(file_word2vec), normalize = normalize)
   if(model$vocab_size != nrow(embedding)){
     stop(sprintf("Model vocabulary size (%s) not the same size as the embedding (%s)", model$vocab_size, nrow(embedding)))
   }
@@ -239,16 +240,18 @@ print.BPEembed <- function(x, ...){
 #' @description Use the sentencepiece model to either
 #' \itemize{
 #' \item{encode: tokenise and embed text}
-#' \item{decode: get the untokenised text back of tokensed data}
+#' \item{decode: get the untokenised text back of tokenised data}
+#' \item{tokenize: only tokenize alongside the sentencepiece model}
 #' }
 #' @param object an object of class BPEembed as returned by \code{\link{BPEembed}}
 #' @param newdata a character vector of text to encode or a character vector of encoded tokens to decode or a list of those
-#' @param type character string, either 'encode' or 'decode'
-#' @param ... not used
+#' @param type character string, either 'encode', 'decode' or 'tokenize'
+#' @param ... further arguments passed on to the methods
 #' @return 
 #' \itemize{
 #' \item{in case type is set to \code{'encode'}: a list of matrices containing embeddings of the text which is tokenised with \code{\link{sentencepiece_encode}}}
 #' \item{in case type is set to \code{'decode'}: a character vector of decoded text as returned by \code{\link{sentencepiece_decode}}}
+#' \item{in case type is set to \code{'tokenize'}: a tokenised \code{\link{sentencepiece_encode}}}
 #' }
 #' @export
 #' @seealso \code{\link{BPEembed}}, \code{\link{sentencepiece_decode}}, \code{\link{sentencepiece_encode}}
@@ -267,9 +270,13 @@ print.BPEembed <- function(x, ...){
 #' 
 #' txt <- rownames(values[[1]])
 #' predict(encoder, txt, type = "decode") 
-#' txt <- lapply(values, FUN=rownames) 
+#' txt <- lapply(values, FUN = rownames) 
 #' predict(encoder, txt, type = "decode") 
-predict.BPEembed <- function(object, newdata, type = c("encode", "decode"), ...){
+#' txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
+#'          "On est d'accord sur le prix de la biere?")
+#' predict(encoder, txt, type = "tokenize", type = "subwords") 
+#' predict(encoder, txt, type = "tokenize", type = "ids")  
+predict.BPEembed <- function(object, newdata, type = c("encode", "decode", "tokenize"), ...){
   type <- match.arg(type)
   if(type == "encode"){
     emb <- sentencepiece_encode(object$model, newdata, type = "ids")
@@ -281,5 +288,7 @@ predict.BPEembed <- function(object, newdata, type = c("encode", "decode"), ...)
     emb
   }else if(type == "decode"){
     sentencepiece_decode(object$model, newdata)
+  }else if(type == "tokenize"){
+    sentencepiece_encode(object$model, newdata, ...)
   }
 }
