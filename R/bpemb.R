@@ -145,3 +145,141 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
   models
 }
 
+
+
+
+
+#' @title Tokenise and embed text alongside a Sentencepiece and Word2vec model
+#' @description Use a sentencepiece model to tokenise text and get the embeddings of these
+#' @param file_sentencepiece the path to the file containing the sentencepiece model
+#' @param file_word2vec the path to the file containing the word2vec embeddings
+#' @param x the result of a call to \code{\link{sentencepiece_download_model}}
+#' @return an object of class BPEembed which is a list with elements 
+#' \itemize{
+#' \item{model: a sentencepiece model as loaded with \code{\link{sentencepiece_load_model}}}
+#' \item{embedding: a matrix with embeddings as loaded with \code{\link[word2vec]{read.wordvectors}}}
+#' \item{dim: the dimension of the embedding}
+#' \item{n: the number of elements in the vocabulary}
+#' \item{file_sentencepiece: the sentencepiece model file}
+#' \item{file_word2vec: the word2vec embedding file}
+#' }
+#' @seealso \code{\link{predict.BPEembed}}, \code{\link{sentencepiece_load_model}}, \code{\link{sentencepiece_download_model}}, \code{\link[word2vec]{read.wordvectors}}
+#' @export
+#' @examples
+#' ## Example downloading model
+#' path <- getwd()
+#' \dontshow{
+#' path <- tempdir()
+#' }
+#' \donttest{
+#' dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50, model_dir = path)
+#' encoder <- BPEembed(x = dl)
+#' encoder
+#' }
+#' \dontshow{
+#' # clean up for CRAN
+#' f <- list.files(tempdir(), pattern = ".vocab$|.model$", full.names = TRUE)
+#' invisible(file.remove(f))
+#' }
+#' ## Example loading model from disk
+#' embedding <- system.file(package = "sentencepiece", "models", 
+#'                          "nl.wiki.bpe.vs1000.d25.w2v.bin")
+#' model     <- system.file(package = "sentencepiece", "models", 
+#'                          "nl.wiki.bpe.vs1000.model")  
+#' encoder   <- BPEembed(model, embedding)  
+#' 
+#' txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
+#'          "On est d'accord sur le prix de la biere?")
+#' values <- predict(encoder, txt, type = "encode")  
+#' str(values) 
+#' values
+#' 
+#' txt <- rownames(values[[1]])
+#' predict(encoder, txt, type = "decode") 
+#' txt <- lapply(values, FUN=rownames) 
+#' predict(encoder, txt, type = "decode") 
+BPEembed <- function(file_sentencepiece, file_word2vec, x){
+  requireNamespace("word2vec")
+  if(packageVersion("word2vec") < "0.2.0"){
+    stop("This requires word2vec package >= 0.2.0")
+  }
+  
+  if(!missing(x)){
+    file_sentencepiece <- x$file_model
+    file_word2vec <- x$glove.bin$file_model
+    if(x$glove$download_failed || x$glove.bin$download_failed){
+      stop("Your downloads of the models that you provided in x were not successfull")
+    }
+  }
+  stopifnot(is.character(file_sentencepiece))
+  stopifnot(is.character(file_word2vec))
+  stopifnot(tools::file_ext(file_word2vec) %in% c("bin", "txt"))
+  
+  model     <- sentencepiece_load_model(file_sentencepiece)
+  embedding <- word2vec::read.wordvectors(file_word2vec, type = tools::file_ext(file_word2vec))
+  if(model$vocab_size != nrow(embedding)){
+    stop(sprintf("Model vocabulary size (%s) not the same size as the embedding (%s)", model$vocab_size, nrow(embedding)))
+  }
+  structure(list(model = model, embedding = embedding, 
+                 dim = ncol(embedding), 
+                 n = nrow(embedding),
+                 file_sentencepiece = file_sentencepiece, 
+                 file_word2vec = file_word2vec), class = "BPEembed")
+}
+
+
+#' @export
+print.BPEembed <- function(x, ...){
+  cat(sprintf("A sentencepiece encoder with %s subwords and embedding dimension %s", x$n, x$dim), sep = "\n")
+  cat(sprintf("  - Based on model file %s", x$file_sentencepiece), sep = "\n")
+  cat(sprintf("  - Based on wordvectors in %s", x$file_word2vec), sep = "\n")
+}
+
+#' @title Encode and Decode alongside a BPEembed model
+#' @description Use the sentencepiece model to either
+#' \itemize{
+#' \item{encode: tokenise and embed text}
+#' \item{decode: get the untokenised text back of tokensed data}
+#' }
+#' @param object an object of class BPEembed as returned by \code{\link{BPEembed}}
+#' @param newdata a character vector of text to encode or a character vector of encoded tokens to decode or a list of those
+#' @param type character string, either 'encode' or 'decode'
+#' @param ... not used
+#' @return 
+#' \itemize{
+#' \item{in case type is set to \code{'encode'}: a list of matrices containing embeddings of the text which is tokenised with \code{\link{sentencepiece_encode}}}
+#' \item{in case type is set to \code{'decode'}: a character vector of decoded text as returned by \code{\link{sentencepiece_decode}}}
+#' }
+#' @export
+#' @seealso \code{\link{BPEembed}}, \code{\link{sentencepiece_decode}}, \code{\link{sentencepiece_encode}}
+#' @examples 
+#' embedding <- system.file(package = "sentencepiece", "models", 
+#'                          "nl.wiki.bpe.vs1000.d25.w2v.bin")
+#' model     <- system.file(package = "sentencepiece", "models", 
+#'                          "nl.wiki.bpe.vs1000.model")    
+#' encoder   <- BPEembed(model, embedding)  
+#' 
+#' txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
+#'          "On est d'accord sur le prix de la biere?")
+#' values <- predict(encoder, txt, type = "encode")  
+#' str(values) 
+#' values
+#' 
+#' txt <- rownames(values[[1]])
+#' predict(encoder, txt, type = "decode") 
+#' txt <- lapply(values, FUN=rownames) 
+#' predict(encoder, txt, type = "decode") 
+predict.BPEembed <- function(object, newdata, type = c("encode", "decode"), ...){
+  type <- match.arg(type)
+  if(type == "encode"){
+    emb <- sentencepiece_encode(object$model, newdata, type = "ids")
+    names(emb) <- names(newdata)
+    emb <- lapply(emb, FUN=function(i){
+      m <- object$embedding[i + 1, , drop = FALSE] 
+      m 
+    })
+    emb
+  }else if(type == "decode"){
+    sentencepiece_decode(object$model, newdata)
+  }
+}
