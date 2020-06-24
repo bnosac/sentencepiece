@@ -12,7 +12,7 @@ sentencepiece_decode(model, x)
 \item{x}{an integer vector of Sentencepiece id's or a list of these}
 }
 \value{
-a character vector of detokenised text
+a character vector of detokenised text or if you encoded with \code{nbest}, a list of these
 }
 \description{
 Decode a sequence of Sentencepiece ids into text again
@@ -27,5 +27,14 @@ txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
 x <- sentencepiece_encode(model, x = txt, type = "subwords")
 sentencepiece_decode(model, x)
 x <- sentencepiece_encode(model, x = txt, type = "ids")
+sentencepiece_decode(model, x)
+
+model <- system.file(package = "sentencepiece", "models", 
+                     "nl-fr-dekamer-unigram.model")
+model <- sentencepiece_load_model(file = model)
+x <- sentencepiece_encode(model, x = txt, type = "subwords", nbest = 3)
+sentencepiece_decode(model, x)
+x <- sentencepiece_encode(model, x = txt, type = "subwords", 
+                          nbest = 3, alpha = 0.1)
 sentencepiece_decode(model, x)
 }

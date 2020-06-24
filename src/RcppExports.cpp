@@ -51,6 +51,60 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// spc_encode_as_subwords_sample
+std::vector<std::vector<std::string>> spc_encode_as_subwords_sample(SEXP model, const std::vector<std::string>& x, int nbest_size, float alpha);
+RcppExport SEXP _sentencepiece_spc_encode_as_subwords_sample(SEXP modelSEXP, SEXP xSEXP, SEXP nbest_sizeSEXP, SEXP alphaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type model(modelSEXP);
+    Rcpp::traits::input_parameter< const std::vector<std::string>& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< int >::type nbest_size(nbest_sizeSEXP);
+    Rcpp::traits::input_parameter< float >::type alpha(alphaSEXP);
+    rcpp_result_gen = Rcpp::wrap(spc_encode_as_subwords_sample(model, x, nbest_size, alpha));
+    return rcpp_result_gen;
+END_RCPP
+}
+// spc_encode_as_ids_sample
+std::vector<std::vector<int>> spc_encode_as_ids_sample(SEXP model, const std::vector<std::string>& x, int nbest_size, float alpha);
+RcppExport SEXP _sentencepiece_spc_encode_as_ids_sample(SEXP modelSEXP, SEXP xSEXP, SEXP nbest_sizeSEXP, SEXP alphaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type model(modelSEXP);
+    Rcpp::traits::input_parameter< const std::vector<std::string>& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< int >::type nbest_size(nbest_sizeSEXP);
+    Rcpp::traits::input_parameter< float >::type alpha(alphaSEXP);
+    rcpp_result_gen = Rcpp::wrap(spc_encode_as_ids_sample(model, x, nbest_size, alpha));
+    return rcpp_result_gen;
+END_RCPP
+}
+// spc_encode_as_subwords_nbest
+Rcpp::List spc_encode_as_subwords_nbest(SEXP model, const std::vector<std::string>& x, int nbest_size);
+RcppExport SEXP _sentencepiece_spc_encode_as_subwords_nbest(SEXP modelSEXP, SEXP xSEXP, SEXP nbest_sizeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type model(modelSEXP);
+    Rcpp::traits::input_parameter< const std::vector<std::string>& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< int >::type nbest_size(nbest_sizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(spc_encode_as_subwords_nbest(model, x, nbest_size));
+    return rcpp_result_gen;
+END_RCPP
+}
+// spc_encode_as_ids_nbest
+Rcpp::List spc_encode_as_ids_nbest(SEXP model, const std::vector<std::string>& x, int nbest_size);
+RcppExport SEXP _sentencepiece_spc_encode_as_ids_nbest(SEXP modelSEXP, SEXP xSEXP, SEXP nbest_sizeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type model(modelSEXP);
+    Rcpp::traits::input_parameter< const std::vector<std::string>& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< int >::type nbest_size(nbest_sizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(spc_encode_as_ids_nbest(model, x, nbest_size));
+    return rcpp_result_gen;
+END_RCPP
+}
 // spc_decode_ids
 std::string spc_decode_ids(SEXP model, const std::vector<int>& x);
 RcppExport SEXP _sentencepiece_spc_decode_ids(SEXP modelSEXP, SEXP xSEXP) {
@@ -95,6 +149,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_sentencepiece_spc_load_model", (DL_FUNC) &_sentencepiece_spc_load_model, 1},
     {"_sentencepiece_spc_encode_as_subwords", (DL_FUNC) &_sentencepiece_spc_encode_as_subwords, 2},
     {"_sentencepiece_spc_encode_as_ids", (DL_FUNC) &_sentencepiece_spc_encode_as_ids, 2},
+    {"_sentencepiece_spc_encode_as_subwords_sample", (DL_FUNC) &_sentencepiece_spc_encode_as_subwords_sample, 4},
+    {"_sentencepiece_spc_encode_as_ids_sample", (DL_FUNC) &_sentencepiece_spc_encode_as_ids_sample, 4},
+    {"_sentencepiece_spc_encode_as_subwords_nbest", (DL_FUNC) &_sentencepiece_spc_encode_as_subwords_nbest, 3},
+    {"_sentencepiece_spc_encode_as_ids_nbest", (DL_FUNC) &_sentencepiece_spc_encode_as_ids_nbest, 3},
     {"_sentencepiece_spc_decode_ids", (DL_FUNC) &_sentencepiece_spc_decode_ids, 2},
     {"_sentencepiece_spc_decode_subwords", (DL_FUNC) &_sentencepiece_spc_decode_subwords, 2},
     {"_sentencepiece_wordpiece_encode_as_subwords", (DL_FUNC) &_sentencepiece_wordpiece_encode_as_subwords, 4},

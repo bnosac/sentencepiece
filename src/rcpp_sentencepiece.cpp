@@ -40,6 +40,8 @@ Rcpp::List spc_load_model(std::string file) {
   return out;
 }
 
+/////////////////////////////// BASIC ////////////////////////////////////////////////////
+
 // [[Rcpp::export]]
 std::vector<std::vector<std::string>> spc_encode_as_subwords(SEXP model, const std::vector<std::string>& x) {
   Rcpp::XPtr<sentencepiece::SentencePieceProcessor> processor(model);
@@ -67,6 +69,62 @@ std::vector<std::vector<int>> spc_encode_as_ids(SEXP model, const std::vector<st
   return x_encoded;
 }
 
+/////////////////////////////// SAMPLE ////////////////////////////////////////////////////
+// [[Rcpp::export]]
+std::vector<std::vector<std::string>> spc_encode_as_subwords_sample(SEXP model, const std::vector<std::string>& x, int nbest_size = -1, float alpha = 1) {
+  Rcpp::XPtr<sentencepiece::SentencePieceProcessor> processor(model);
+  
+  std::vector<std::vector<std::string>> x_encoded;
+  for (unsigned int i = 0; i < x.size(); i++){
+    std::vector<std::string> pieces;
+    processor->SampleEncode(x[i], nbest_size, alpha, &pieces);
+    x_encoded.push_back(pieces);
+  }
+  return x_encoded;
+}
+
+
+// [[Rcpp::export]]
+std::vector<std::vector<int>> spc_encode_as_ids_sample(SEXP model, const std::vector<std::string>& x, int nbest_size = -1, float alpha = 1) {
+  Rcpp::XPtr<sentencepiece::SentencePieceProcessor> processor(model);
+  
+  std::vector<std::vector<int>> x_encoded;
+  for (unsigned int i = 0; i < x.size(); i++){
+    std::vector<int> ids;
+    processor->SampleEncode(x[i], nbest_size, alpha, &ids);
+    x_encoded.push_back(ids);
+  }
+  return x_encoded;
+}
+
+
+/////////////////////////////// NBEST ////////////////////////////////////////////////////
+
+// [[Rcpp::export]]
+Rcpp::List spc_encode_as_subwords_nbest(SEXP model, const std::vector<std::string>& x, int nbest_size = -1) {
+  Rcpp::XPtr<sentencepiece::SentencePieceProcessor> processor(model);
+  
+  Rcpp::List out(x.size());
+  for (unsigned int i = 0; i < x.size(); i++){
+    std::vector<std::vector<std::string>> pieces;
+    processor->NBestEncode(x[i], nbest_size, &pieces);
+    out[i] = pieces;
+  }
+  return out;
+}
+
+// [[Rcpp::export]]
+Rcpp::List spc_encode_as_ids_nbest(SEXP model, const std::vector<std::string>& x, int nbest_size = -1) {
+  Rcpp::XPtr<sentencepiece::SentencePieceProcessor> processor(model);
+  
+  Rcpp::List out(x.size());
+  for (unsigned int i = 0; i < x.size(); i++){
+    std::vector<std::vector<int>> pieces;
+    processor->NBestEncode(x[i], nbest_size, &pieces);
+    out[i] = pieces;
+  }
+  return out;
+}
 
 // [[Rcpp::export]]
 std::string spc_decode_ids(SEXP model, const std::vector<int>& x) {

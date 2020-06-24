@@ -4,6 +4,7 @@
 - Also download the binary model in sentencepiece_download_model as it can be loaded with word2vec::read.wordvectors
 - read_word2vec now uses word2vec::read.wordvectors from word2vec >= 0.2.0
 - added BPEembed and predict.BPEembed
+- allow subword regularisation by adding nbest and alpha option in sentencepiece_encode and changed sentencepiece_decode accordingly
 
 ## CHANGES IN sentencepiece VERSION 0.1.2
 

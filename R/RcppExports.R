@@ -17,6 +17,22 @@ spc_encode_as_ids <- function(model, x) {
     .Call('_sentencepiece_spc_encode_as_ids', PACKAGE = 'sentencepiece', model, x)
 }
 
+spc_encode_as_subwords_sample <- function(model, x, nbest_size = -1L, alpha = 1) {
+    .Call('_sentencepiece_spc_encode_as_subwords_sample', PACKAGE = 'sentencepiece', model, x, nbest_size, alpha)
+}
+
+spc_encode_as_ids_sample <- function(model, x, nbest_size = -1L, alpha = 1) {
+    .Call('_sentencepiece_spc_encode_as_ids_sample', PACKAGE = 'sentencepiece', model, x, nbest_size, alpha)
+}
+
+spc_encode_as_subwords_nbest <- function(model, x, nbest_size = -1L) {
+    .Call('_sentencepiece_spc_encode_as_subwords_nbest', PACKAGE = 'sentencepiece', model, x, nbest_size)
+}
+
+spc_encode_as_ids_nbest <- function(model, x, nbest_size = -1L) {
+    .Call('_sentencepiece_spc_encode_as_ids_nbest', PACKAGE = 'sentencepiece', model, x, nbest_size)
+}
+
 spc_decode_ids <- function(model, x) {
     .Call('_sentencepiece_spc_decode_ids', PACKAGE = 'sentencepiece', model, x)
 }

@@ -4,7 +4,13 @@
 \alias{sentencepiece_encode}
 \title{Tokenise text alongside a Sentencepiece model}
 \usage{
-sentencepiece_encode(model, x, type = c("subwords", "ids"))
+sentencepiece_encode(
+  model,
+  x,
+  type = c("subwords", "ids"),
+  nbest = -1L,
+  alpha = 0.1
+)
 }
 \arguments{
 \item{model}{an object of class \code{sentencepiece} as returned by \code{\link{sentencepiece_load_model}} or \code{\link{sentencepiece}}}
@@ -13,12 +19,28 @@ sentencepiece_encode(model, x, type = c("subwords", "ids"))
 
 \item{type}{a character string, either 'subwords' or 'ids' to get the subwords or the corresponding ids of these subwords as defined in the vocabulary of the model. 
 Defaults to 'subwords'.}
+
+\item{nbest}{integer indicating the number of segmentations to extract. See the details. The argument is not used if you do not provide a value for it.}
+
+\item{alpha}{smoothing parameter to perform subword regularisation. Typical values are 0.1, 0.2 or 0.5. See the details. The argument is not used if you do not provide a value for it or do not provide a value for \code{nbest}.}
 }
 \value{
-a list with tokenised text, one for each element of \code{x}
+a list with tokenised text, one for each element of \code{x} 
+unless you provide \code{nbest} without providing \code{alpha} in which case the result is a list of list of \code{nbest} tokenised texts
 }
 \description{
 Tokenise text alongside a Sentencepiece model
+}
+\details{
+If you specify \code{alpha} to perform subword regularisation, keep in mind the following. \cr
+When alpha is 0.0, one segmentation is uniformly sampled from the \code{nbest} or lattice. 
+The best Viterbi segmentation is more likely sampled when setting larger \code{alpha} values like 0.1. \cr
+\itemize{
+\item If you provide a positive value for \code{nbest}, approximately samples one segmentation from \code{nbest} candidates.
+\item If you provide a negative value for \code{nbest}, samples one segmentation from the hypotheses (Lattice) according to the generation probabilities using forward-filtering and backward-sampling algorithm.
+}
+\code{nbest} and \code{alpha} correspond respectively to the parameter \code{l} and in \code{alpha} 
+in the paper \url{https://arxiv.org/abs/1804.10959} where (\code{nbest} < 0 means l = infinity).\cr
 }
 \examples{
 model <- system.file(package = "sentencepiece", "models", "nl-fr-dekamer.model")
@@ -28,4 +50,23 @@ txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
          "On est d'accord sur le prix de la biere?")
 sentencepiece_encode(model, x = txt, type = "subwords")
 sentencepiece_encode(model, x = txt, type = "ids")
+
+## Examples using subword regularisation
+model <- system.file(package = "sentencepiece", "models", "nl-fr-dekamer-unigram.model")
+model <- sentencepiece_load_model(file = model)
+
+txt <- c("Goed zo",
+         "On est d'accord")
+sentencepiece_encode(model, x = txt, type = "subwords", nbest = 4)
+sentencepiece_encode(model, x = txt, type = "ids", nbest = 4)
+sentencepiece_encode(model, x = txt, type = "subwords", nbest = 2)
+sentencepiece_encode(model, x = txt, type = "ids", nbest = 2)
+sentencepiece_encode(model, x = txt, type = "subwords", nbest = 1)
+sentencepiece_encode(model, x = txt, type = "ids", nbest = 1)
+sentencepiece_encode(model, x = txt, type = "subwords", nbest = 4, alpha = 0.1)
+sentencepiece_encode(model, x = txt, type = "ids", nbest = 4, alpha = 0.1)
+sentencepiece_encode(model, x = txt, type = "subwords", nbest = -1, alpha = 0.1)
+sentencepiece_encode(model, x = txt, type = "ids", nbest = -1, alpha = 0.1)
+sentencepiece_encode(model, x = txt, type = "subwords", nbest = -1, alpha = 0)
+sentencepiece_encode(model, x = txt, type = "ids", nbest = -1, alpha = 0)
 }
