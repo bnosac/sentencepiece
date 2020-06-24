@@ -280,7 +280,7 @@ print.BPEembed <- function(x, ...){
 predict.BPEembed <- function(object, newdata, type = c("encode", "decode", "tokenize"), ...){
   type <- match.arg(type)
   if(type == "encode"){
-    emb <- sentencepiece_encode(object$model, newdata, type = "ids")
+    emb <- sentencepiece_encode(object$model, newdata, type = "ids", ...)
     names(emb) <- names(newdata)
     emb <- lapply(emb, FUN=function(i){
       m <- object$embedding[i + 1, , drop = FALSE] 
