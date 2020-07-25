@@ -60,6 +60,7 @@
 sentencepiece <- function(x, type = c("bpe", "char", "unigram", "word"), vocab_size = 8000, coverage = 0.9999, 
                           model_prefix = "sentencepiece", 
                           model_dir = tempdir(), threads = 1L, args, verbose = FALSE){
+  x <- normalizePath(x)
   oldwd <- getwd()
   on.exit(setwd(oldwd))
   setwd(model_dir)
