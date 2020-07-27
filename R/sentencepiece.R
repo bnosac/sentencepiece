@@ -12,7 +12,7 @@
 #' You can change the name of the model by providing the \code{model_prefix} argument.
 #' @param model_dir directory where the model will be saved. Defaults to the temporary directory (tempdir())
 #' @param threads integer indicating number of threads to use when building the model
-#' @param args character string with arguments passed on to sentencepiece::SentencePieceTrainer::Train (for expert use only)
+#' @param args character string with arguments passed on to sentencepiece::SentencePieceTrainer::Train (for expert use only, all other arguments will be ignored except for verbose)
 #' @param verbose logical indicating to show progress of sentencepiece training. Defaults to \code{FALSE}.
 #' @return an object of class \code{sentencepiece} which is defined at \code{\link{sentencepiece_load_model}}
 #' @seealso \code{\link{sentencepiece_load_model}}
@@ -60,34 +60,35 @@
 sentencepiece <- function(x, type = c("bpe", "char", "unigram", "word"), vocab_size = 8000, coverage = 0.9999, 
                           model_prefix = "sentencepiece", 
                           model_dir = tempdir(), threads = 1L, args, verbose = FALSE){
-  x <- normalizePath(x)
-  oldwd <- getwd()
-  on.exit(setwd(oldwd))
-  setwd(model_dir)
-  if(grepl(pattern = " ", model_prefix)){
-    stop("model_prefix should not contain spaces")
-  }
-  type <- match.arg(type)
   if(missing(args)){
+    x <- normalizePath(x)
+    oldwd <- getwd()
+    on.exit(setwd(oldwd))
+    setwd(model_dir)
+    if(grepl(pattern = " ", model_prefix)){
+      stop("model_prefix should not contain spaces")
+    }
+    type <- match.arg(type)
     stopifnot(is.character(x))
     stopifnot(all(file.exists(x)))
     args <- sprintf("--input=%s --model_prefix=%s --vocab_size=%s --character_coverage=%s --model_type=%s", paste(x, collapse=","), model_prefix, vocab_size, coverage, type)
+    model_file <- file.path(getwd(), sprintf("%s.model", model_prefix))
   }else{
     args <- as.character(args)
-    model_prefix <- regmatches(args, regexpr(args, pattern = "model_prefix=.+ -"))
+    model_prefix <- regmatches(args, regexpr(args, pattern = "model_prefix=.+( -|$)"))
     model_prefix <- gsub("^model_prefix=|-$", "", model_prefix)
     model_prefix <- gsub(" +$", "", model_prefix)
     if(length(model_prefix) == 0 || nchar(model_prefix) == 0){
       stop("Please provide at least model_prefix")
     }
+    model_file <- sprintf("%s.model", model_prefix)
   }
   if(verbose){
     result <- spc_train(args)  
   }else{
     msg <- capture.output(result <- spc_train(args))
   }
-  model <- file.path(getwd(), sprintf("%s.model", model_prefix))  
-  result <- sentencepiece_load_model(file = model)
+  result <- sentencepiece_load_model(file = model_file)
   result
 }
 
