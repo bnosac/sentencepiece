@@ -5,6 +5,7 @@
 - read_word2vec now uses word2vec::read.wordvectors from word2vec >= 0.2.0
 - added BPEembed and predict.BPEembed
 - allow subword regularisation by adding nbest and alpha option in sentencepiece_encode and changed sentencepiece_decode accordingly
+- Added txt_remove_
 
 ## CHANGES IN sentencepiece VERSION 0.1.2
 
