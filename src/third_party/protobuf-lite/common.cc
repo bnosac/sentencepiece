@@ -291,7 +291,7 @@ void LogMessage::Finish() {
 #if PROTOBUF_USE_EXCEPTIONS
     throw FatalException(filename_, line_, message_);
 #else
-    abort();
+    Rcpp::stop("Program terminated with an unrecoverable error.");
 #endif
   }
 }
