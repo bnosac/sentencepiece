@@ -8,17 +8,16 @@ Rcpp::StringVector wordpiece_encode_as_subwords(std::string x, std::vector<std::
   unsigned int len = x.length();
   if(len > max_input_chars_per_word){
     output_tokens.push_back(unk_token);
-  }else{
+  } else{
     unsigned int start = 0;
     std::vector<std::string> sub_tokens;
-    
     while(start < len){
-      unsigned int end = len;
+      unsigned int end = len - 1;
       std::string cur_substr = "";
       std::string substr;
-      while(start < end){
+      while(start <= end){
         substr = x.substr(start, end - start + 1);
-        //Rcpp::Rcout << substr << ":" << start << "-" << end <<"\n";
+        // Rcpp::Rcout << substr << ":" << start << "-" << end <<"\n";
         if(start > 0){
           substr = "##" + substr;
         }
@@ -26,7 +25,11 @@ Rcpp::StringVector wordpiece_encode_as_subwords(std::string x, std::vector<std::
           cur_substr = substr;
           break;
         }
-        end = end - 1;
+        if (end > 0) {
+          end = end - 1;
+        } else {
+          break;
+        }
       }
       if(cur_substr == ""){
         sub_tokens.push_back(unk_token);
