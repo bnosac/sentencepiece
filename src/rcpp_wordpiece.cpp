@@ -5,7 +5,7 @@
 Rcpp::StringVector wordpiece_encode_as_subwords(std::string x, std::vector<std::string> vocabulary, std::string unk_token="[UNK]", unsigned int max_input_chars_per_word=100) {
   // Tokenizes a piece of text into its word pieces, using a greedy longest-match-first algorithm to perform tokenization
   Rcpp::StringVector output_tokens;
-  unsigned int len = x.length() - 1;
+  unsigned int len = x.length();
   if(len > max_input_chars_per_word){
     output_tokens.push_back(unk_token);
   }else{
