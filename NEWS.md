@@ -1,5 +1,6 @@
 ## CHANGES IN sentencepiece VERSION 0.1.3
 
+- Fix wordpiece bug for 1-character words. (@jonthegeek, #4)
 - Fix Solaris installation issue related to incorrect usage of pointer as a function 
 - Also download the binary model in sentencepiece_download_model as it can be loaded with word2vec::read.wordvectors
 - read_word2vec now uses word2vec::read.wordvectors from word2vec >= 0.2.0
