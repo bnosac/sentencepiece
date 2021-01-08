@@ -60,3 +60,5 @@ OBJECTS   = $(OBJ:.cpp=.o)
 
 all: $(SHLIB); rm -f $(OBJECTS)
 #all: $(SHLIB); rm -f rcpp_wordpiece.o; rm -f rcpp_sentencepiece.o; rm -f RcppExports.o
+#all: $(SHLIB); rm -f third_party/protobuf-lite/repeated_field.o; 
+

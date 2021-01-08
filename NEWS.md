@@ -1,3 +1,8 @@
+## CHANGES IN sentencepiece VERSION 0.2
+
+- Fix wordpiece bug for 1-character words. (@jonthegeek, #4)
+- TODO: upgrade to sentencepiece release v0.1.95
+
 ## CHANGES IN sentencepiece VERSION 0.1.3
 
 - Fix wordpiece bug for 1-character words. (@jonthegeek, #4)
