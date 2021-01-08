@@ -7,6 +7,7 @@
 - added BPEembed and predict.BPEembed
 - allow subword regularisation by adding nbest and alpha option in sentencepiece_encode and changed sentencepiece_decode accordingly
 - Added txt_remove_
+- Upgrade sentencepiece to release v0.1.91 commit a32d7dc6ce6f383a65ad6e1cbe1983f94ab11932 which has subword regularisation for BPE
 
 ## CHANGES IN sentencepiece VERSION 0.1.2
 
