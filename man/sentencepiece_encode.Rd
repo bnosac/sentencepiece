@@ -41,6 +41,10 @@ The best Viterbi segmentation is more likely sampled when setting larger \code{a
 }
 \code{nbest} and \code{alpha} correspond respectively to the parameter \code{l} and in \code{alpha} 
 in the paper \url{https://arxiv.org/abs/1804.10959} where (\code{nbest} < 0 means l = infinity).\cr
+
+If the model is a BPE model, \code{alpha} is the merge probability \code{p} explained in \url{https://arxiv.org/abs/1910.13267}. 
+In a BPE model, nbest-based sampling is not supported so the nbest parameter is ignored although 
+it still needs to be provided if you want to make use of \code{alpha}.
 }
 \examples{
 model <- system.file(package = "sentencepiece", "models", "nl-fr-dekamer.model")

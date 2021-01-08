@@ -230,6 +230,63 @@ BPEembed <- function(file_sentencepiece = x$file_model, file_word2vec = x$glove.
 }
 
 
+
+#' @title Build a BPEembed model containing a Sentencepiece and Word2vec model
+#' @description Build a sentencepiece model on text and build a matching word2vec model on the sentencepiece vocabulary
+#' @param x a data.frame with columns doc_id and text
+#' @param tokenizer character string with the type of sentencepiece tokenizer. Either 'bpe', 'char', 'unigram' or 'word' for Byte Pair Encoding, Character level encoding,
+#' Unigram encoding or pretokenised word encoding. Defaults to 'bpe' (Byte Pair Encoding). Passed on to \code{\link{sentencepiece}}
+#' @param args a list of arguments passed on to \code{\link{sentencepiece}}  
+#' @param ... arguments passed on to \code{\link[word2vec]{word2vec}} for training a word2vec model
+#' @return an object of class BPEembed which is a list with elements 
+#' \itemize{
+#' \item{model: a sentencepiece model as loaded with \code{\link{sentencepiece_load_model}}}
+#' \item{embedding: a matrix with embeddings as loaded with \code{\link[word2vec]{read.wordvectors}}}
+#' \item{dim: the dimension of the embedding}
+#' \item{n: the number of elements in the vocabulary}
+#' \item{file_sentencepiece: the sentencepiece model file}
+#' \item{file_word2vec: the word2vec embedding file}
+#' }
+#' @seealso \code{\link{sentencepiece}}, \code{\link[word2vec]{word2vec}}, \code{\link{predict.BPEembed}}
+#' @export
+#' @examples
+#' library(tokenizers.bpe)
+#' data(belgium_parliament, package = "tokenizers.bpe")
+#' x <- subset(belgium_parliament, language %in% "dutch")
+#' model <- BPEembedder(x, tokenizer = "unigram", args = list(vocab_size = 1000),
+#'                      type = "cbow", dim = 20, iter = 10) 
+#' model
+#' 
+#' txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.")
+#' values <- predict(model, txt, type = "encode")  
+BPEembedder <- function(x, tokenizer = c("bpe", "char", "unigram", "word"), args = list(vocab_size = 8000, coverage = 0.9999), ...){
+  tokenizer <- match.arg(tokenizer)
+  stopifnot(is.data.frame(x) && all(c("doc_id", "text") %in% colnames(x)))
+  ## build sentencepiece model + word2vec model
+  f <- tempfile()
+  on.exit(file.remove(f))
+  writeLines(x$text, con = f)
+  args$x <- x
+  args$type <- tokenizer
+  model <- do.call(sentencepiece, args)
+  
+  ## replace text with ids and train a word2vec model
+  text <- sentencepiece_encode(model, x$text, type = "ids")
+  text <- sapply(text, paste, collapse = " ")
+  w2v <- word2vec(text, ...)
+  embedding <- predict(w2v, newdata = model$vocabulary$id, type = "embedding")
+  rownames(embedding) <- model$vocabulary$subword
+  embedding[is.na(embedding)] <- 0
+  
+  bpemb <- structure(list(model = model, embedding = embedding, 
+                          dim = ncol(embedding), 
+                          n = nrow(embedding),
+                          file_sentencepiece = model$model_path, 
+                          file_word2vec = "RAM"), class = "BPEembed")
+  bpemb
+}
+
+
 #' @export
 print.BPEembed <- function(x, ...){
   cat(sprintf("A sentencepiece encoder with %s subwords and embedding dimension %s", x$n, x$dim), sep = "\n")
