@@ -4,7 +4,7 @@ The package also includes 3rd party open source software components and data. Th
 
 ------------------------------------------------------------------------------------------------------
 - sentencepiece (Files at src/sentencepiece/src: Apache 2 License
-  Release v0.1.84, commit https://github.com/google/sentencepiece/commit/2424d82d396b43b2556203c592e48a621ef10f3c
+  Release v0.1.96, commit https://github.com/google/sentencepiece/commit/d8711f55d9b2cb9c77a00adcc18108482b29b675
 ------------------------------------------------------------------------------------------------------
 
                                  Apache License
