@@ -37,9 +37,9 @@ model     <- system.file(package = "sentencepiece", "models",
                          "nl.wiki.bpe.vs1000.model")    
 encoder   <- BPEembed(model, embedding)  
 
-txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
-         "On est d'accord sur le prix de la biere?")
-values <- predict(encoder, txt, type = "encode")  
+txt      <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
+              "On est d'accord sur le prix de la biere?")
+values   <- predict(encoder, txt, type = "encode")  
 str(values) 
 values
 

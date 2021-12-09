@@ -4,7 +4,8 @@
 
 
 #' @title Wordpiece encoding
-#' @description Wordpiece encoding, usefull for BERT-style tokenisation. Experimental version mimicing class WordpieceTokenizer from \url{https://github.com/huggingface/transformers/blob/master/src/transformers/tokenization_bert.py}
+#' @description Wordpiece encoding, usefull for BERT-style tokenisation. 
+#' Experimental version mimicing class WordpieceTokenizer from \url{https://github.com/huggingface/transformers/blob/master/src/transformers/models/bert/tokenization_bert.py}
 #' @param x a character vector with text which can be splitted based on white space to obtain words
 #' @param vocabulary a character vector of the vocabulary
 #' @param type a character string, either 'subwords' or 'ids' to get the subwords or the corresponding ids of these subwords as defined in the vocabulary of the model. 

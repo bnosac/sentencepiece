@@ -28,7 +28,8 @@ Defaults to 'subwords'.}
 a list of subword tokens
 }
 \description{
-Wordpiece encoding, usefull for BERT-style tokenisation. Experimental version mimicing class WordpieceTokenizer from \url{https://github.com/huggingface/transformers/blob/master/src/transformers/tokenization_bert.py}
+Wordpiece encoding, usefull for BERT-style tokenisation. 
+Experimental version mimicing class WordpieceTokenizer from \url{https://github.com/huggingface/transformers/blob/master/src/transformers/models/bert/tokenization_bert.py}
 }
 \examples{
 wordpiece_encode("unaffable", vocabulary = c("un", "##aff", "##able")) 

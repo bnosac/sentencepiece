@@ -3,7 +3,7 @@
 This repository contains an R package which is an Rcpp wrapper around the sentencepiece C++ library
 
 - sentencepiece is an unsupervised tokeniser which allows to execute text tokenization using Byte Pair Encoding and Unigrams
-- It is based on the paper *SentencePiece: A simple and language independent subword tokenizer and detokenizer for Neural Text Processing* [[Taku Kudo, John Richardson.](https://www.aclweb.org/anthology/D18-2012)]
+- It is based on the paper *SentencePiece: A simple and language independent subword tokenizer and detokenizer for Neural Text Processing* [[Taku Kudo, John Richardson.](https://aclanthology.org/D18-2012)]
 - The sentencepiece C++ code is available at https://github.com/google/sentencepiece. 
     - This package currently wraps release v0.1.84
 - This R package has similar functionalities as the R package https://github.com/bnosac/tokenizers.bpe

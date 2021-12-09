@@ -2,12 +2,12 @@
 
 #' @title Download a Sentencepiece model
 #' @description Download pretrained models built on Wikipedia
-#' made available at \url{https://nlp.h-its.org/bpemb} through \url{https://github.com/bheinzerling/bpemb}. 
+#' made available at \url{https://bpemb.h-its.org} through \url{https://github.com/bheinzerling/bpemb}. 
 #' These models contain Byte Pair Encoded models trained with sentencepiece as well
 #' as Glove embeddings of these Byte Pair subwords. Models for 275 languages are available.
 #' @param language a character string with the language name. This can be either a plain language or a wikipedia shorthand. \cr
 #' Possible values can be found by looking at the examples or typing sentencepiece:::.bpemb$languages \cr
-#' If you provide multi it downloads the multilingual model available at \url{https://nlp.h-its.org/bpemb/multi}
+#' If you provide multi it downloads the multilingual model available at \url{https://bpemb.h-its.org/multi}
 #' @param vocab_size integer indicating the number of tokens in the final vocabulary. Defaults to 5000. Possible values depend on the language. To inspect possible values, type sentencepiece:::.bpemb$vocab_sizes and look to your language of your choice.
 #' @param dim dimension of the embedding. Either 25, 50, 100, 200 or 300.
 #' @param model_dir path to the location where the model will be downloaded to. Defaults to \code{system.file(package = "sentencepiece", "models")}.
@@ -108,7 +108,7 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
     models$vocab_size <- vocab_size
     
     ## Sentencepiece Model
-    url <- sprintf("https://nlp.h-its.org/bpemb/%s/%s.wiki.bpe.vs%s.model", language, language, vocab_size)
+    url <- sprintf("https://bpemb.h-its.org/%s/%s.wiki.bpe.vs%s.model", language, language, vocab_size)
     to <- file.path(model_dir, basename(url))
     result <- download_file(url = url, to = to, mode = "wb")
     models$file_model <- result$file_model
@@ -123,7 +123,7 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
         warning("dim should be either 25, 50, 100, 200 or 300")
       }
       
-      url <- sprintf("https://nlp.h-its.org/bpemb/%s/%s.wiki.bpe.vs%s.d%s.w2v.txt.tar.gz", language, language, vocab_size, dim)
+      url <- sprintf("https://bpemb.h-its.org/%s/%s.wiki.bpe.vs%s.d%s.w2v.txt.tar.gz", language, language, vocab_size, dim)
       to <- file.path(model_dir, basename(url))
       result <- download_file(url = url, to = to, mode = "wb")
       filename <- utils::untar(result$file_model, list = TRUE)
@@ -132,7 +132,7 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
       result$file_model <- file.path(model_dir, filename)
       models$glove <- result  
       
-      url <- sprintf("https://nlp.h-its.org/bpemb/%s/%s.wiki.bpe.vs%s.d%s.w2v.bin.tar.gz", language, language, vocab_size, dim)
+      url <- sprintf("https://bpemb.h-its.org/%s/%s.wiki.bpe.vs%s.d%s.w2v.bin.tar.gz", language, language, vocab_size, dim)
       to <- file.path(model_dir, basename(url))
       result <- download_file(url = url, to = to, mode = "wb")
       filename <- utils::untar(result$file_model, list = TRUE)
@@ -168,30 +168,17 @@ sentencepiece_download_model <- function(language, vocab_size, dim,
 #' @seealso \code{\link{predict.BPEembed}}, \code{\link{sentencepiece_load_model}}, \code{\link{sentencepiece_download_model}}, \code{\link[word2vec]{read.wordvectors}}
 #' @export
 #' @examples
-#' ## Example downloading model
-#' path <- getwd()
-#' \dontshow{
-#' path <- tempdir()
-#' }
-#' \donttest{
-#' dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50, model_dir = path)
-#' encoder <- BPEembed(x = dl)
-#' encoder
-#' }
-#' \dontshow{
-#' # clean up for CRAN
-#' f <- list.files(tempdir(), pattern = ".vocab$|.model$", full.names = TRUE)
-#' invisible(file.remove(f))
-#' }
+#' ##
 #' ## Example loading model from disk
-#' embedding <- system.file(package = "sentencepiece", "models", 
-#'                          "nl.wiki.bpe.vs1000.d25.w2v.bin")
-#' model     <- system.file(package = "sentencepiece", "models", 
-#'                          "nl.wiki.bpe.vs1000.model")  
+#' ##
+#' folder    <- system.file(package = "sentencepiece", "models")
+#' embedding <- file.path(folder, "nl.wiki.bpe.vs1000.d25.w2v.bin")
+#' model     <- file.path(folder, "nl.wiki.bpe.vs1000.model")
 #' encoder   <- BPEembed(model, embedding)  
 #' 
-#' txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
-#'          "On est d'accord sur le prix de la biere?")
+#' ## Do tokenisation with the sentencepiece model + embed these
+#' txt    <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
+#'             "On est d'accord sur le prix de la biere?")
 #' values <- predict(encoder, txt, type = "encode")  
 #' str(values) 
 #' values
@@ -252,12 +239,12 @@ BPEembed <- function(file_sentencepiece = x$file_model, file_word2vec = x$glove.
 #' @examples
 #' library(tokenizers.bpe)
 #' data(belgium_parliament, package = "tokenizers.bpe")
-#' x <- subset(belgium_parliament, language %in% "dutch")
+#' x     <- subset(belgium_parliament, language %in% "dutch")
 #' model <- BPEembedder(x, tokenizer = "unigram", args = list(vocab_size = 1000),
 #'                      type = "cbow", dim = 20, iter = 10) 
 #' model
 #' 
-#' txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.")
+#' txt    <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.")
 #' values <- predict(model, txt, type = "encode")  
 BPEembedder <- function(x, tokenizer = c("bpe", "char", "unigram", "word"), args = list(vocab_size = 8000, coverage = 0.9999), ...){
   requireNamespace("word2vec")
@@ -325,9 +312,9 @@ print.BPEembed <- function(x, ...){
 #'                          "nl.wiki.bpe.vs1000.model")    
 #' encoder   <- BPEembed(model, embedding)  
 #' 
-#' txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
-#'          "On est d'accord sur le prix de la biere?")
-#' values <- predict(encoder, txt, type = "encode")  
+#' txt      <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
+#'               "On est d'accord sur le prix de la biere?")
+#' values   <- predict(encoder, txt, type = "encode")  
 #' str(values) 
 #' values
 #' 

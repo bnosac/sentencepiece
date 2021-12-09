@@ -36,30 +36,17 @@ an object of class BPEembed which is a list with elements
 Use a sentencepiece model to tokenise text and get the embeddings of these
 }
 \examples{
-## Example downloading model
-path <- getwd()
-\dontshow{
-path <- tempdir()
-}
-\donttest{
-dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50, model_dir = path)
-encoder <- BPEembed(x = dl)
-encoder
-}
-\dontshow{
-# clean up for CRAN
-f <- list.files(tempdir(), pattern = ".vocab$|.model$", full.names = TRUE)
-invisible(file.remove(f))
-}
+##
 ## Example loading model from disk
-embedding <- system.file(package = "sentencepiece", "models", 
-                         "nl.wiki.bpe.vs1000.d25.w2v.bin")
-model     <- system.file(package = "sentencepiece", "models", 
-                         "nl.wiki.bpe.vs1000.model")  
+##
+folder    <- system.file(package = "sentencepiece", "models")
+embedding <- file.path(folder, "nl.wiki.bpe.vs1000.d25.w2v.bin")
+model     <- file.path(folder, "nl.wiki.bpe.vs1000.model")
 encoder   <- BPEembed(model, embedding)  
 
-txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
-         "On est d'accord sur le prix de la biere?")
+## Do tokenisation with the sentencepiece model + embed these
+txt    <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.",
+            "On est d'accord sur le prix de la biere?")
 values <- predict(encoder, txt, type = "encode")  
 str(values) 
 values

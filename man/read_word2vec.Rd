@@ -30,38 +30,13 @@ a matrix with one row per token containing the embedding of the token
 Read a word2vec embedding file as a dense matrix. This uses \code{\link[word2vec]{read.wordvectors}} from the word2vec package.
 }
 \examples{
-embedding <- system.file(package = "sentencepiece", "models", 
-                         "nl.wiki.bpe.vs1000.d25.w2v.txt")
+folder    <- system.file(package = "sentencepiece", "models")
+embedding <- file.path(folder, "nl.wiki.bpe.vs1000.d25.w2v.bin")
+embedding <- read_word2vec(embedding, type = "bin")
+head(embedding)
+embedding <- file.path(folder, "nl.wiki.bpe.vs1000.d25.w2v.txt")
 embedding <- read_word2vec(embedding, type = "txt")
-head(embedding, 10)
-
-path <- getwd()
-\dontshow{
-path <- tempdir()
-}
-\donttest{
-## English
-dl <- sentencepiece_download_model("en", vocab_size = 5000, dim = 100, model_dir = path)
-embedding <- read_word2vec(dl$glove$file_model,     type = "txt")
-embedding <- read_word2vec(dl$glove.bin$file_model, type = "bin")
-
-## Dutch
-dl <- sentencepiece_download_model("nl", vocab_size = 10000, dim = 25, model_dir = path)
-dl <- sentencepiece_download_model("nl", vocab_size = 1000, dim = 50, model_dir = path)
-embedding <- read_word2vec(dl$glove$file_model,     type = "txt", n = 100)
-embedding <- read_word2vec(dl$glove.bin$file_model, type = "bin", n = 100)
-
-## Vlaams
-dl <- sentencepiece_download_model("Vlaams", vocab_size = 50000, dim = 25, model_dir = path)
-embedding <- read_word2vec(dl$glove$file_model,     type = "txt", n = 2000)
-embedding <- read_word2vec(dl$glove.bin$file_model, type = "bin", n = 2000)
-}
-
-\dontshow{
-# clean up for CRAN
-f <- list.files(tempdir(), pattern = ".vocab$|.model$", full.names = TRUE)
-invisible(file.remove(f))
-}
+head(embedding, n = 10)
 }
 \seealso{
 \code{\link[word2vec]{read.wordvectors}}
