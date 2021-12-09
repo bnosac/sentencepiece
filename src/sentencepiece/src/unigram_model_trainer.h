@@ -71,7 +71,7 @@ class Trainer : public TrainerInterface {
   util::Status Train() override;
 
  private:
-  FRIEND_TEST(TrainerTest, IsValidSentencePieceTest);
+  // FRIEND_TEST(TrainerTest, IsValidSentencePieceTest);
 
   // Makes seed pieces from the training corpus.
   // The size of seed pieces is determined by seed_sentencepiece_size.

@@ -601,8 +601,8 @@ class NBestSentencePieceText PROTOBUF_FINAL :
 // ===================================================================
 
 #ifdef __GNUC__
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wstrict-aliasing"
+  // #pragma GCC diagnostic push
+  // #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif  // __GNUC__
 // SentencePieceText_SentencePiece
 
@@ -1024,7 +1024,7 @@ NBestSentencePieceText::nbests() const {
 }
 
 #ifdef __GNUC__
-  #pragma GCC diagnostic pop
+  // #pragma GCC diagnostic pop
 #endif  // __GNUC__
 // -------------------------------------------------------------------
 

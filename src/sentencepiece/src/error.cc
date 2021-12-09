@@ -1,3 +1,4 @@
+#include <Rcpp.h>
 // Copyright 2016 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,8 +35,8 @@ void Abort() {
   if (GetTestCounter() == 1) {
     SetTestCounter(2);
   } else {
-    std::cerr << "Program terminated with an unrecoverable error." << std::endl;
-    exit(-1);
+    Rcpp::Rcerr << "Program terminated with an unrecoverable error." << std::endl;
+    Rcpp::stop("sentencepiece error");
   }
 }
 
@@ -43,7 +44,7 @@ void Exit(int code) {
   if (GetTestCounter() == 1) {
     SetTestCounter(2);
   } else {
-    exit(code);
+    Rcpp::stop("sentencepiece error");
   }
 }
 

@@ -97,7 +97,7 @@ class Normalizer {
   friend class Builder;
 
  private:
-  FRIEND_TEST(NormalizerTest, EncodeDecodePrecompiledCharsMapTest);
+  // FRIEND_TEST(NormalizerTest, EncodeDecodePrecompiledCharsMapTest);
 
   void Init();
 

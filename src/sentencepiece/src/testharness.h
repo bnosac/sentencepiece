@@ -1,3 +1,4 @@
+#include <Rcpp.h>
 // Copyright 2016 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,9 +47,9 @@ class Tester {
 
   ~Tester() {
     if (!ok_) {
-      std::cerr << "[       NG ] " << fname_ << ":" << line_ << ":" << ss_.str()
+      Rcpp::Rcerr << "[       NG ] " << fname_ << ":" << line_ << ":" << ss_.str()
                 << std::endl;
-      exit(-1);
+      Rcpp::stop("sentencepiece error");
     }
   }
 

@@ -1,3 +1,4 @@
+#include <Rcpp.h>
 // Protocol Buffers - Google's data interchange format
 // Copyright 2008 Google Inc.  All rights reserved.
 // https://developers.google.com/protocol-buffers/
@@ -150,8 +151,9 @@ inline void DefaultLogHandler(LogLevel level, const char* filename, int line,
   __android_log_write(android_log_level, "libprotobuf-native",
                       ostr.str().c_str());
   // Also output to std::cerr.
-  fprintf(stderr, "%s", ostr.str().c_str());
-  fflush(stderr);
+  Rcpp::Rcout << ostr.str().c_str() << std::endl;
+  //fprintf(stderr, "%s", ostr.str().c_str());
+  //fflush(stderr);
 
   // Indicate termination if needed.
   if (android_log_level == ANDROID_LOG_FATAL) {
@@ -170,9 +172,10 @@ void DefaultLogHandler(LogLevel level, const char* filename, int line,
 
   // We use fprintf() instead of cerr because we want this to work at static
   // initialization time.
-  fprintf(stderr, "[libprotobuf %s %s:%d] %s\n",
-          level_names[level], filename, line, message.c_str());
-  fflush(stderr);  // Needed on MSVC.
+  Rcpp::Rcout << "[libprotobuf " << level_names[level] << " " << filename << ":" << line << "] " << message.c_str() << std::endl;
+  //fprintf(stderr, "[libprotobuf %s %s:%d] %s\n",
+  //        level_names[level], filename, line, message.c_str());
+  //fflush(stderr);  // Needed on MSVC.
 }
 #endif
 
@@ -211,6 +214,20 @@ LogMessage& LogMessage::operator<<(const uint128& value) {
   return *this;
 }
 
+LogMessage& LogMessage::operator<<(long long value) {
+  std::ostringstream str;
+  str << std::to_string(value);
+  message_ += str.str();
+  return *this;
+}
+
+LogMessage& LogMessage::operator<<(unsigned long long value) {
+  std::ostringstream str;
+  str << std::to_string(value);
+  message_ += str.str();
+  return *this;
+}
+
 // Since this is just for logging, we don't care if the current locale changes
 // the results -- in fact, we probably prefer that.  So we use snprintf()
 // instead of Simple*toa().
@@ -235,8 +252,13 @@ DECLARE_STREAM_OPERATOR(long         , "%ld")
 DECLARE_STREAM_OPERATOR(unsigned long, "%lu")
 DECLARE_STREAM_OPERATOR(double       , "%g" )
 DECLARE_STREAM_OPERATOR(void*        , "%p" )
-DECLARE_STREAM_OPERATOR(long long         , "%" PROTOBUF_LL_FORMAT "d")
-DECLARE_STREAM_OPERATOR(unsigned long long, "%" PROTOBUF_LL_FORMAT "u")
+// #ifdef _MSC_VER
+//     DECLARE_STREAM_OPERATOR(long long         , "%I64d")
+//     DECLARE_STREAM_OPERATOR(unsigned long long, "%I64u")
+// #else
+//     DECLARE_STREAM_OPERATOR(long long         , "%lld")
+//     DECLARE_STREAM_OPERATOR(unsigned long long, "%llu")
+// #endif
 #undef DECLARE_STREAM_OPERATOR
 
 LogMessage::LogMessage(LogLevel level, const char* filename, int line)
@@ -258,7 +280,7 @@ void LogMessage::Finish() {
 #if PROTOBUF_USE_EXCEPTIONS
     throw FatalException(filename_, line_, message_);
 #else
-    abort();
+    Rcpp::stop("sentencepiece error");
 #endif
   }
 }
@@ -284,11 +306,11 @@ LogHandler* SetLogHandler(LogHandler* new_func) {
 
 LogSilencer::LogSilencer() {
   ++internal::log_silencer_count_;
-};
+}
 
 LogSilencer::~LogSilencer() {
   --internal::log_silencer_count_;
-};
+}
 
 // ===================================================================
 // emulates google3/base/callback.cc

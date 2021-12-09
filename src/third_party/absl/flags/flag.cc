@@ -1,3 +1,4 @@
+#include <Rcpp.h>
 // Copyright 2016 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,11 +25,9 @@
 #include "src/common.h"
 #include "src/util.h"
 
-ABSL_FLAG(bool, help, false, "show help");
-ABSL_FLAG(bool, version, false, "show version");
-ABSL_FLAG(int, minloglevel, 0,
-          "Messages logged at a lower level than this don't actually get "
-          "logged anywhere");
+ABSL_FLAG(bool, help, false, "show help")
+ABSL_FLAG(bool, version, false, "show version")
+ABSL_FLAG(int, minloglevel, 0, "Messages logged at a lower level than this don't actually get logged anywhere")
 
 namespace absl {
 namespace internal {
@@ -202,17 +201,17 @@ std::vector<char *> ParseCommandLine(int argc, char *argv[]) {
     }
 
     if (!set_flag(key, value)) {
-      std::cerr << "Unknown/Invalid flag " << key << "\n\n"
+      Rcpp::Rcout << "Unknown/Invalid flag " << key << "\n\n"
                 << internal::PrintHelp(argv[0]);
       sentencepiece::error::Exit(1);
     }
   }
 
   if (absl::GetFlag(FLAGS_help)) {
-    std::cout << internal::PrintHelp(argv[0]);
+    Rcpp::Rcout << internal::PrintHelp(argv[0]);
     sentencepiece::error::Exit(0);
   } else if (absl::GetFlag(FLAGS_version)) {
-    std::cout << PACKAGE_STRING << " " << VERSION << std::endl;
+    Rcpp::Rcout << PACKAGE_STRING << " " << VERSION << std::endl;
     sentencepiece::error::Exit(0);
   }
 

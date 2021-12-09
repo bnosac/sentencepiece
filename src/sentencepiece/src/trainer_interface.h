@@ -101,11 +101,11 @@ class TrainerInterface {
 
   virtual util::Status status() const { return status_; }
 
-  FRIEND_TEST(TrainerInterfaceTest, IsValidSentencePieceTest);
-  FRIEND_TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest);
-  FRIEND_TEST(TrainerInterfaceTest, BytePiecesTest);
-  FRIEND_TEST(TrainerInterfaceTest, SerializeTest);
-  FRIEND_TEST(TrainerInterfaceTest, CharactersTest);
+  // FRIEND_TEST(TrainerInterfaceTest, IsValidSentencePieceTest);
+  // FRIEND_TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest);
+  // FRIEND_TEST(TrainerInterfaceTest, BytePiecesTest);
+  // FRIEND_TEST(TrainerInterfaceTest, SerializeTest);
+  // FRIEND_TEST(TrainerInterfaceTest, CharactersTest);
 
  protected:
   // Returns true if |piece| is valid sentence piece.

@@ -68,9 +68,7 @@ class PosixReadableFile : public ReadableFile {
 class PosixWritableFile : public WritableFile {
  public:
   PosixWritableFile(absl::string_view filename, bool is_binary = false)
-      : os_(filename.empty()
-                ? &std::cout
-                : new std::ofstream(WPATH(filename.data()),
+      : os_(new std::ofstream(WPATH(filename.data()),
                                     is_binary ? std::ios::binary | std::ios::out
                                               : std::ios::out)) {
     if (!*os_)
@@ -80,7 +78,7 @@ class PosixWritableFile : public WritableFile {
   }
 
   ~PosixWritableFile() {
-    if (os_ != &std::cout) delete os_;
+    delete os_;
   }
 
   util::Status status() const { return status_; }

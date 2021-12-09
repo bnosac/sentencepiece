@@ -43,9 +43,9 @@ namespace sentencepiece {
 namespace normalizer {
 namespace {
 
-constexpr int kMaxUnicode = 0x10FFFF;
+//constexpr int kMaxUnicode = 0x10FFFF;
 
-static constexpr char kDefaultNormalizerName[] = "nfkc";
+//static constexpr char kDefaultNormalizerName[] = "nfkc";
 
 #ifdef ENABLE_NFKC_COMPILE
 // Normalize `input` with ICU's normalizer with `mode`.
