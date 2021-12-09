@@ -25,8 +25,10 @@ namespace character {
 class Trainer : public TrainerInterface {
  public:
   Trainer(const TrainerSpec &trainer_spec,
-          const NormalizerSpec &normalizer_spec)
-      : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec) {}
+          const NormalizerSpec &normalizer_spec,
+          const NormalizerSpec &denormalizer_spec)
+      : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec,
+                                           denormalizer_spec) {}
 
   util::Status Train() override;
 };

@@ -19,13 +19,15 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include "common.h"
+#include "filesystem.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
+#include "sentencepiece_trainer.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -42,10 +44,30 @@ std::vector<std::pair<K, V>> Sorted(const std::vector<std::pair<K, V>> &m) {
 }
 
 template <typename K, typename V>
-std::vector<std::pair<K, V>> Sorted(const std::unordered_map<K, V> &m) {
+std::vector<std::pair<K, V>> Sorted(const absl::flat_hash_map<K, V> &m) {
   std::vector<std::pair<K, V>> v(m.begin(), m.end());
   return Sorted(v);
 }
+
+class MultiFileSentenceIterator : public SentenceIterator {
+ public:
+  explicit MultiFileSentenceIterator(const std::vector<std::string> &files);
+  ~MultiFileSentenceIterator() {}
+
+  bool done() const override;
+  void Next() override;
+  const std::string &value() const override { return value_; }
+  util::Status status() const override;
+
+ private:
+  void TryRead();
+
+  bool read_done_ = false;
+  size_t file_index_ = 0;
+  std::vector<std::string> files_;
+  std::string value_;
+  std::unique_ptr<filesystem::ReadableFile> fp_;
+};
 
 // Base trainer class
 class TrainerInterface {
@@ -61,17 +83,29 @@ class TrainerInterface {
   static const char kUPPBoundaryStr[];
 
   TrainerInterface(const TrainerSpec &trainer_spec,
-                   const NormalizerSpec &normalizer_spec);
+                   const NormalizerSpec &normalizer_spec,
+                   const NormalizerSpec &denormalizer_spec);
 
   virtual ~TrainerInterface();
+
+  // Loads sentence from `sentence_iterator` and stores the model
+  // to `output_model_proto`.
+  virtual util::Status Train(SentenceIterator *sentence_iterator,
+                             ModelProto *output_model_proto) {
+    sentence_iterator_ = sentence_iterator;
+    output_model_proto_ = output_model_proto;
+    return Train();
+  }
 
   virtual util::Status Train() { return status(); }
 
   virtual util::Status status() const { return status_; }
 
-//  FRIEND_TEST(TrainerInterfaceTest, IsValidSentencePieceTest);
-//  FRIEND_TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest);
-//  FRIEND_TEST(TrainerInterfaceTest, SerializeTest);
+  FRIEND_TEST(TrainerInterfaceTest, IsValidSentencePieceTest);
+  FRIEND_TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest);
+  FRIEND_TEST(TrainerInterfaceTest, BytePiecesTest);
+  FRIEND_TEST(TrainerInterfaceTest, SerializeTest);
+  FRIEND_TEST(TrainerInterfaceTest, CharactersTest);
 
  protected:
   // Returns true if |piece| is valid sentence piece.
@@ -79,7 +113,7 @@ class TrainerInterface {
   // max_sentencepiece_length, split_by_whiespace, split_by_unicode_script.
   bool IsValidSentencePiece(const string_util::UnicodeText &piece) const;
 
-  // Loads all sentences from spec.input().
+  // Loads all sentences from spec.input() or SentenceIterator.
   // It loads at most input_sentence_size sentences.
   util::Status LoadSentences();
 
@@ -95,7 +129,7 @@ class TrainerInterface {
 
   // Set of characters which must be included in the final vocab.
   // The value of this map stores the frequency.
-  std::unordered_map<char32, int64> required_chars_;
+  absl::flat_hash_map<char32, int64> required_chars_;
 
   // Final output pieces
   std::vector<std::pair<std::string, float>> final_pieces_;
@@ -109,6 +143,9 @@ class TrainerInterface {
   // Normalizer spec
   NormalizerSpec normalizer_spec_;
 
+  // Denormalizer spec
+  NormalizerSpec denormalizer_spec_;
+
   // Reserved control pieces. e.g., <unk>, <s>, </s>.
   // key is vocab id.
   std::map<int, std::pair<std::string, ModelProto::SentencePiece::Type>>
@@ -116,6 +153,12 @@ class TrainerInterface {
 
   // Detect errors on initialization.
   util::Status status_;
+
+  // Loads sentences from SentenceIterator if not null.
+  SentenceIterator *sentence_iterator_ = nullptr;
+
+  // Emits model to this proto instead of file.
+  ModelProto *output_model_proto_ = nullptr;
 
  private:
   // Serialize final_pieces_ to |model_proto|.

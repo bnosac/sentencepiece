@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "word_model_trainer.h"
-
 #include <cmath>
 #include <string>
-#include <unordered_map>
 
+#include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/strings/string_view.h"
 #include "util.h"
 #include "word_model.h"
+#include "word_model_trainer.h"
 
 namespace sentencepiece {
 namespace word {
@@ -33,7 +32,7 @@ util::Status Trainer::Train() {
 
   RETURN_IF_ERROR(LoadSentences());
 
-  std::unordered_map<std::string, uint64> freq;
+  absl::flat_hash_map<std::string, uint64> freq;
   for (const auto &it : sentences_) {
     for (const auto &s : SplitIntoWords(it.first)) {
       freq[std::string(s)] += it.second;
@@ -48,7 +47,7 @@ util::Status Trainer::Train() {
     sum += it.second;
   }
 
-  const float logsum = static_cast<float>(log(static_cast<long double>(sum)));
+  const auto logsum = std::log(static_cast<float>(sum));
 
   CHECK_OR_RETURN(final_pieces_.empty());
   for (const auto &it : Sorted(freq)) {
@@ -59,7 +58,8 @@ util::Status Trainer::Train() {
         final_pieces_.size() == static_cast<size_t>(vocab_size)) {
       break;
     }
-    final_pieces_.emplace_back(it.first, static_cast<float>(log(static_cast<long double>(it.second))) - logsum);
+    final_pieces_.emplace_back(
+        it.first, std::log(static_cast<float>(it.second)) - logsum);
   }
 
   if (trainer_spec_.use_all_vocab()) {

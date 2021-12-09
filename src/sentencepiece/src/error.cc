@@ -1,4 +1,3 @@
-#include <Rcpp.h>
 // Copyright 2016 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,8 +13,18 @@
 // limitations under the License.!
 
 #include <cstring>
+
 #include "common.h"
 #include "sentencepiece_processor.h"
+
+#ifdef _USE_EXTERNAL_ABSL
+// Naive workaround to define minloglevel on external absl package.
+// We want to define them in other cc file.
+#include "third_party/absl/flags/flag.h"
+#include "third_party/absl/flags/parse.h"
+ABSL_FLAG(int32, minloglevel, 0,
+          "Messages logged at a lower level than this don't actually.");
+#endif
 
 namespace sentencepiece {
 namespace error {
@@ -25,7 +34,8 @@ void Abort() {
   if (GetTestCounter() == 1) {
     SetTestCounter(2);
   } else {
-    Rcpp::stop("Program terminated with an unrecoverable error.");
+    std::cerr << "Program terminated with an unrecoverable error." << std::endl;
+    exit(-1);
   }
 }
 
@@ -33,7 +43,7 @@ void Exit(int code) {
   if (GetTestCounter() == 1) {
     SetTestCounter(2);
   } else {
-    Rcpp::stop("Program terminated with an unrecoverable error.");
+    exit(code);
   }
 }
 
@@ -47,16 +57,16 @@ Status::Status() {}
 Status::~Status() {}
 
 struct Status::Rep {
-  error::Code code;
+  StatusCode code;
   std::string error_message;
 };
 
-Status::Status(error::Code code, const char* error_message) : rep_(new Rep) {
+Status::Status(StatusCode code, const char* error_message) : rep_(new Rep) {
   rep_->code = code;
   rep_->error_message = error_message;
 }
 
-Status::Status(error::Code code, const std::string& error_message)
+Status::Status(StatusCode code, const std::string& error_message)
     : rep_(new Rep) {
   rep_->code = code;
   rep_->error_message = error_message;
@@ -83,63 +93,61 @@ void Status::set_error_message(const char* str) {
   rep_->error_message = str;
 }
 
-error::Code Status::code() const { return ok() ? error::OK : rep_->code; }
+StatusCode Status::code() const { return ok() ? StatusCode::kOk : rep_->code; }
 
 std::string Status::ToString() const {
   if (rep_ == nullptr) return "OK";
 
   std::string result;
   switch (code()) {
-    case error::CANCELLED:
+    case StatusCode::kCancelled:
       result = "Cancelled";
       break;
-    case error::UNKNOWN:
+    case StatusCode::kUnknown:
       result = "Unknown";
       break;
-    case error::INVALID_ARGUMENT:
+    case StatusCode::kInvalidArgument:
       result = "Invalid argument";
       break;
-    case error::DEADLINE_EXCEEDED:
+    case StatusCode::kDeadlineExceeded:
       result = "Deadline exceeded";
       break;
-    case error::NOT_FOUND:
+    case StatusCode::kNotFound:
       result = "Not found";
       break;
-    case error::ALREADY_EXISTS:
+    case StatusCode::kAlreadyExists:
       result = "Already exists";
       break;
-    case error::PERMISSION_DENIED:
+    case StatusCode::kPermissionDenied:
       result = "Permission denied";
       break;
-    case error::UNAUTHENTICATED:
+    case StatusCode::kResourceExhausted:
       result = "Unauthenticated";
       break;
-    case error::RESOURCE_EXHAUSTED:
-      result = "Resource exhausted";
-      break;
-    case error::FAILED_PRECONDITION:
+    case StatusCode::kFailedPrecondition:
       result = "Failed precondition";
       break;
-    case error::ABORTED:
+    case StatusCode::kAborted:
       result = "Aborted";
       break;
-    case error::OUT_OF_RANGE:
+    case StatusCode::kOutOfRange:
       result = "Out of range";
       break;
-    case error::UNIMPLEMENTED:
+    case StatusCode::kUnimplemented:
       result = "Unimplemented";
       break;
-    case error::INTERNAL:
+    case StatusCode::kInternal:
       result = "Internal";
       break;
-    case error::UNAVAILABLE:
+    case StatusCode::kUnavailable:
       result = "Unavailable";
       break;
-    case error::DATA_LOSS:
+    case StatusCode::kDataLoss:
       result = "Data loss";
       break;
+    case StatusCode::kUnauthenticated:
+      result = "Unauthenticated";
     default:
-      result = "Unkown code:";
       break;
   }
 

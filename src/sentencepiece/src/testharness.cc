@@ -1,4 +1,3 @@
-#include <Rcpp.h>
 // Copyright 2016 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +15,10 @@
 #include "testharness.h"
 
 #ifndef OS_WIN
+#include <sys/stat.h>
 #include <unistd.h>
+#else
+#include <direct.h>
 #endif
 
 #include <memory>
@@ -24,6 +26,7 @@
 #include <vector>
 
 #include "common.h"
+#include "third_party/absl/strings/str_cat.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -52,40 +55,26 @@ bool RegisterTest(const char *base, const char *name, void (*func)()) {
 
 int RunAllTests() {
   int num = 0;
+#ifdef OS_WIN
+  _mkdir(absl::GetFlag(FLAGS_test_tmpdir).c_str());
+#else
+  mkdir(absl::GetFlag(FLAGS_test_tmpdir).c_str(), S_IRUSR | S_IWUSR | S_IXUSR);
+#endif
+
   if (tests == nullptr) {
-    Rcpp::Rcout << "No tests are found" << std::endl;
+    std::cerr << "No tests are found" << std::endl;
     return 0;
   }
 
   for (const Test &t : *(tests)) {
-    Rcpp::Rcout << "[ RUN      ] " << t.base << "." << t.name << std::endl;
+    std::cerr << "[ RUN      ] " << t.base << "." << t.name << std::endl;
     (*t.func)();
-    Rcpp::Rcout << "[       OK ] " << t.base << "." << t.name << std::endl;
+    std::cerr << "[       OK ] " << t.base << "." << t.name << std::endl;
     ++num;
   }
-  Rcpp::Rcout << "==== PASSED " << num << " tests" << std::endl;
+  std::cerr << "==== PASSED " << num << " tests" << std::endl;
 
   return 0;
-}
-
-ScopedTempFile::ScopedTempFile(absl::string_view filename) {
-  char pid[64];
-  snprintf(pid, sizeof(pid), "%u",
-#ifdef OS_WIN
-           static_cast<uint32>(::GetCurrentProcessId())
-#else
-           ::getpid()
-#endif
-  );
-  filename_ = string_util::StrCat(".XXX.tmp.", filename, ".", pid);
-}
-
-ScopedTempFile::~ScopedTempFile() {
-#ifdef OS_WIN
-  ::DeleteFile(WPATH(filename_.c_str()));
-#else
-  ::unlink(filename_.c_str());
-#endif
 }
 }  // namespace test
 }  // namespace sentencepiece

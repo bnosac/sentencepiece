@@ -1,4 +1,3 @@
-#include <Rcpp.h>
 // Copyright 2016 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,8 +19,14 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+
 #include "common.h"
+#include "third_party/absl/flags/flag.h"
+#include "third_party/absl/flags/parse.h"
 #include "third_party/absl/strings/string_view.h"
+
+ABSL_DECLARE_FLAG(std::string, test_tmpdir);
+ABSL_DECLARE_FLAG(std::string, test_srcdir);
 
 namespace sentencepiece {
 namespace test {
@@ -33,17 +38,6 @@ namespace test {
 // Dies or returns a non-zero value if some test fails.
 int RunAllTests();
 
-class ScopedTempFile {
- public:
-  explicit ScopedTempFile(absl::string_view filename);
-  ~ScopedTempFile();
-
-  const char *filename() const { return filename_.c_str(); }
-
- private:
-  std::string filename_;
-};
-
 // An instance of Tester is allocated to hold temporary state during
 // the execution of an assertion.
 class Tester {
@@ -52,7 +46,7 @@ class Tester {
 
   ~Tester() {
     if (!ok_) {
-      Rcpp::Rcout << "[       NG ] " << fname_ << ":" << line_ << ":" << ss_.str()
+      std::cerr << "[       NG ] " << fname_ << ":" << line_ << ":" << ss_.str()
                 << std::endl;
       exit(-1);
     }
@@ -137,15 +131,48 @@ class Tester {
 #define EXPECT_OK(c) EXPECT_EQ(c, ::sentencepiece::util::OkStatus())
 #define EXPECT_NOT_OK(c) EXPECT_NE(c, ::sentencepiece::util::OkStatus())
 
-#define EXPECT_DEATH(statement) \
-  {                             \
-    error::SetTestCounter(1);   \
-    statement;                  \
-    error::SetTestCounter(0);   \
+#define EXPECT_DEATH(statement, condition)   \
+  {                                          \
+    sentencepiece::error::SetTestCounter(1); \
+    statement;                               \
+    sentencepiece::error::SetTestCounter(0); \
   };
+
+#define ASSERT_TRUE EXPECT_TRUE
+#define ASSERT_FALSE EXPECT_FALSE
+#define ASSERT_STREQ EXPECT_STREQ
+#define ASSERT_EQ EXPECT_EQ
+#define ASSERT_NE EXPECT_NE
+#define ASSERT_GE EXPECT_GE
+#define ASSERT_GT EXPECT_GT
+#define ASSERT_LE EXPECT_LE
+#define ASSERT_LT EXPECT_LT
+#define ASSERT_NEAR EXPECT_NEAR
+#define ASSERT_NOT_OK EXPECT_NOT_OK
+#define ASSERT_DEATH ASSERT_DEATH
+
+template <typename T>
+class TestWithParam {
+ public:
+  using ParamType = T;
+  virtual void SetUp() {}
+  virtual void TearDown() {}
+  virtual ~TestWithParam() {}
+  virtual ParamType GetParam() const { return ParamType(); }
+};
+
+template <typename T>
+std::vector<T> ValuesIn(const std::vector<T> &v) {
+  return v;
+}
 
 #define TCONCAT(a, b, c) TCONCAT1(a, b, c)
 #define TCONCAT1(a, b, c) a##b##c
+
+#define INSTANTIATE_TEST_SUITE_P(suite_base, base, params)           \
+  std::vector<base::ParamType> TCONCAT(base, _get_params_, base)() { \
+    return params;                                                   \
+  }
 
 #define TEST(base, name)                                                       \
   class TCONCAT(base, _Test_, name) {                                          \
@@ -160,6 +187,32 @@ class Tester {
       sentencepiece::test::RegisterTest(#base, #name,                          \
                                         &TCONCAT(base, _Test_, name)::_RunIt); \
   void TCONCAT(base, _Test_, name)::_Run()
+
+#define TEST_P(base, name)                                          \
+  std::vector<base::ParamType> TCONCAT(base, _get_params_, base)(); \
+  class TCONCAT(base, _Test_p_, name) : public base {               \
+   public:                                                          \
+    const std::vector<ParamType> GetParams() const {                \
+      return TCONCAT(base, _get_params_, base)();                   \
+    }                                                               \
+    ParamType param_;                                               \
+    void SetParam(const ParamType &param) { param_ = param; }       \
+    const ParamType GetParam() { return param_; }                   \
+    void _Run();                                                    \
+    static void _RunIt() {                                          \
+      TCONCAT(base, _Test_p_, name) t;                              \
+      for (const auto &param : t.GetParams()) {                     \
+        t.SetParam(param);                                          \
+        t.SetUp();                                                  \
+        t._Run();                                                   \
+        t.TearDown();                                               \
+      }                                                             \
+    }                                                               \
+  };                                                                \
+  bool TCONCAT(base, _Test_p_ignored_, name) =                      \
+      sentencepiece::test::RegisterTest(                            \
+          #base, #name, &TCONCAT(base, _Test_p_, name)::_RunIt);    \
+  void TCONCAT(base, _Test_p_, name)::_Run()
 
 // Register the specified test.  Typically not used directly, but
 // invoked via the macro expansion of TEST.

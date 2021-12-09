@@ -1,4 +1,3 @@
-#include <Rcpp.h>
 // Copyright 2016 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "filesystem.h"
 #include <iostream>
 
+#include "filesystem.h"
+#include "third_party/absl/memory/memory.h"
 #include "util.h"
+
+#if defined(OS_WIN) && defined(UNICODE) && defined(_UNICODE)
+#define WPATH(path) (::sentencepiece::win32::Utf8ToWide(path).c_str())
+#else
+#define WPATH(path) (path)
+#endif
 
 namespace sentencepiece {
 namespace filesystem {
@@ -30,7 +36,7 @@ class PosixReadableFile : public ReadableFile {
                                     is_binary ? std::ios::binary | std::ios::in
                                               : std::ios::in)) {
     if (!*is_)
-      status_ = util::StatusBuilder(util::error::NOT_FOUND)
+      status_ = util::StatusBuilder(util::StatusCode::kNotFound, GTL_LOC)
                 << "\"" << filename.data() << "\": " << util::StrError(errno);
   }
 
@@ -62,16 +68,19 @@ class PosixReadableFile : public ReadableFile {
 class PosixWritableFile : public WritableFile {
  public:
   PosixWritableFile(absl::string_view filename, bool is_binary = false)
-      : os_(new std::ofstream(WPATH(filename.data()),
+      : os_(filename.empty()
+                ? &std::cout
+                : new std::ofstream(WPATH(filename.data()),
                                     is_binary ? std::ios::binary | std::ios::out
                                               : std::ios::out)) {
     if (!*os_)
-      status_ = util::StatusBuilder(util::error::PERMISSION_DENIED)
-                << "\"" << filename.data() << "\": " << util::StrError(errno);
+      status_ =
+          util::StatusBuilder(util::StatusCode::kPermissionDenied, GTL_LOC)
+          << "\"" << filename.data() << "\": " << util::StrError(errno);
   }
 
   ~PosixWritableFile() {
-    delete os_;
+    if (os_ != &std::cout) delete os_;
   }
 
   util::Status status() const { return status_; }
@@ -88,14 +97,17 @@ class PosixWritableFile : public WritableFile {
   std::ostream *os_;
 };
 
+using DefaultReadableFile = PosixReadableFile;
+using DefaultWritableFile = PosixWritableFile;
+
 std::unique_ptr<ReadableFile> NewReadableFile(absl::string_view filename,
                                               bool is_binary) {
-  return port::MakeUnique<PosixReadableFile>(filename, is_binary);
+  return absl::make_unique<DefaultReadableFile>(filename, is_binary);
 }
 
 std::unique_ptr<WritableFile> NewWritableFile(absl::string_view filename,
                                               bool is_binary) {
-  return port::MakeUnique<PosixWritableFile>(filename, is_binary);
+  return absl::make_unique<DefaultWritableFile>(filename, is_binary);
 }
 
 }  // namespace filesystem

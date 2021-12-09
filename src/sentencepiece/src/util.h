@@ -27,6 +27,7 @@
 #include <thread>
 #include <utility>
 #include <vector>
+
 #include "common.h"
 #include "sentencepiece_processor.h"
 #include "third_party/absl/strings/string_view.h"
@@ -35,8 +36,14 @@
 #include <pthread.h>
 #endif
 
-namespace sentencepiece {
+#if !defined(__APPLE__) && !defined(_WIN32)
+#include <endian.h>
+#if BYTE_ORDER == __BIG_ENDIAN
+#define IS_BIG_ENDIAN
+#endif
+#endif
 
+namespace sentencepiece {
 template <typename T>
 std::ostream &operator<<(std::ostream &out, const std::vector<T> &v) {
   for (const auto n : v) {
@@ -45,12 +52,10 @@ std::ostream &operator<<(std::ostream &out, const std::vector<T> &v) {
   return out;
 }
 
+uint32 GetRandomGeneratorSeed();
+
 // String utilities
 namespace string_util {
-
-inline absl::string_view ToSV(util::min_string_view data) {
-  return absl::string_view(data.data(), data.size());
-}
 
 struct string_view_hash {
   // DJB hash function.
@@ -62,20 +67,6 @@ struct string_view_hash {
     return hash;
   }
 };
-
-inline std::string ToLower(absl::string_view arg) {
-  std::string lower_value = std::string(arg);
-  std::transform(lower_value.begin(), lower_value.end(), lower_value.begin(),
-                 ::tolower);
-  return lower_value;
-}
-
-inline std::string ToUpper(absl::string_view arg) {
-  std::string upper_value = std::string(arg);
-  std::transform(upper_value.begin(), upper_value.end(), upper_value.begin(),
-                 ::toupper);
-  return upper_value;
-}
 
 template <typename Target>
 inline bool lexical_cast(absl::string_view arg, Target *result) {
@@ -109,34 +100,6 @@ inline bool lexical_cast(absl::string_view arg, std::string *result) {
   return true;
 }
 
-std::vector<std::string> Split(const std::string &str, const std::string &delim,
-                               bool allow_empty = false);
-
-std::vector<absl::string_view> SplitPiece(absl::string_view str,
-                                          absl::string_view delim,
-                                          bool allow_empty = false);
-
-std::string Join(const std::vector<std::string> &tokens,
-                 absl::string_view delim);
-
-std::string Join(const std::vector<int> &tokens, absl::string_view delim);
-
-inline std::string StrCat(absl::string_view str) {
-  return std::string(str.data(), str.size());
-}
-
-template <typename... T>
-inline std::string StrCat(absl::string_view first, const T &... rest) {
-  return std::string(first) + StrCat(rest...);
-}
-
-std::string StringReplace(absl::string_view s, absl::string_view oldsub,
-                          absl::string_view newsub, bool replace_all);
-
-void StringReplace(absl::string_view s, absl::string_view oldsub,
-                   absl::string_view newsub, bool replace_all,
-                   std::string *res);
-
 template <typename T>
 inline bool DecodePOD(absl::string_view str, T *result) {
   CHECK_NOTNULL(result);
@@ -153,24 +116,6 @@ inline std::string EncodePOD(const T &value) {
   s.resize(sizeof(T));
   memcpy(const_cast<char *>(s.data()), &value, sizeof(T));
   return s;
-}
-
-inline bool StartsWith(absl::string_view text, absl::string_view prefix) {
-  return prefix.empty() ||
-         (text.size() >= prefix.size() &&
-          memcmp(text.data(), prefix.data(), prefix.size()) == 0);
-}
-
-inline bool EndsWith(absl::string_view text, absl::string_view suffix) {
-  return suffix.empty() || (text.size() >= suffix.size() &&
-                            memcmp(text.data() + (text.size() - suffix.size()),
-                                   suffix.data(), suffix.size()) == 0);
-}
-
-inline bool ConsumePrefix(absl::string_view *str, absl::string_view expected) {
-  if (!StartsWith(*str, expected)) return false;
-  str->remove_prefix(expected.size());
-  return true;
 }
 
 template <typename T>
@@ -356,49 +301,6 @@ inline uint64 FingerprintCat(uint64 x, uint64 y) {
   return y;
 }
 
-// Trait to select overloads and return types for MakeUnique.
-template <typename T>
-struct MakeUniqueResult {
-  using scalar = std::unique_ptr<T>;
-};
-template <typename T>
-struct MakeUniqueResult<T[]> {
-  using array = std::unique_ptr<T[]>;
-};
-template <typename T, size_t N>
-struct MakeUniqueResult<T[N]> {
-  using invalid = void;
-};
-
-// MakeUnique<T>(...) is an early implementation of C++14 std::make_unique.
-// It is designed to be 100% compatible with std::make_unique so that the
-// eventual switchover will be a simple renaming operation.
-template <typename T, typename... Args>
-typename MakeUniqueResult<T>::scalar MakeUnique(Args &&... args) {  // NOLINT
-  return std::unique_ptr<T>(
-      new T(std::forward<Args>(args)...));  // NOLINT(build/c++11)
-}
-
-// Overload for array of unknown bound.
-// The allocation of arrays needs to use the array form of new,
-// and cannot take element constructor arguments.
-template <typename T>
-typename MakeUniqueResult<T>::array MakeUnique(size_t n) {
-  return std::unique_ptr<T>(new typename std::remove_extent<T>::type[n]());
-}
-
-// Reject arrays of known bound.
-template <typename T, typename... Args>
-typename MakeUniqueResult<T>::invalid MakeUnique(Args &&... /* args */) =
-    delete;  // NOLINT
-
-template <typename T>
-void STLDeleteElements(std::vector<T *> *vec) {
-  for (auto item : *vec) {
-    delete item;
-  }
-  vec->clear();
-}
 }  // namespace port
 
 namespace random {
@@ -408,9 +310,9 @@ std::mt19937 *GetRandomGenerator();
 template <typename T>
 class ReservoirSampler {
  public:
-  explicit ReservoirSampler(std::vector<T> *sampled, size_t size)
-      : sampled_(sampled), size_(size), engine_(std::random_device{}()) {}
-  explicit ReservoirSampler(std::vector<T> *sampled, size_t size, size_t seed)
+  explicit ReservoirSampler(std::vector<T> *sampled, uint64 size)
+      : sampled_(sampled), size_(size), engine_(GetRandomGeneratorSeed()) {}
+  explicit ReservoirSampler(std::vector<T> *sampled, uint64 size, uint64 seed)
       : sampled_(sampled), size_(size), engine_(seed) {}
   virtual ~ReservoirSampler() {}
 
@@ -421,18 +323,18 @@ class ReservoirSampler {
     if (sampled_->size() < size_) {
       sampled_->push_back(item);
     } else {
-      std::uniform_int_distribution<size_t> dist(0, total_ - 1);
-      const size_t n = dist(engine_);
+      std::uniform_int_distribution<uint64> dist(0, total_ - 1);
+      const uint64 n = dist(engine_);
       if (n < sampled_->size()) (*sampled_)[n] = item;
     }
   }
 
-  size_t total_size() const { return total_; }
+  uint64 total_size() const { return total_; }
 
  private:
   std::vector<T> *sampled_ = nullptr;
-  size_t size_ = 0;
-  size_t total_ = 0;
+  uint64 size_ = 0;
+  uint64 total_ = 0;
   std::mt19937 engine_;
 };
 
@@ -445,7 +347,7 @@ inline std::string JoinPath(absl::string_view path) {
 }
 
 template <typename... T>
-inline std::string JoinPath(absl::string_view first, const T &... rest) {
+inline std::string JoinPath(absl::string_view first, const T &...rest) {
 #ifdef OS_WIN
   return JoinPath(first) + "\\" + JoinPath(rest...);
 #else
@@ -455,36 +357,41 @@ inline std::string JoinPath(absl::string_view first, const T &... rest) {
 
 std::string StrError(int errnum);
 
+std::vector<std::string> StrSplitAsCSV(absl::string_view text);
+
 inline Status OkStatus() { return Status(); }
 
-#define DECLARE_ERROR(FUNC, CODE)                          \
+#define DECLARE_ERROR(FUNC)                                \
   inline util::Status FUNC##Error(absl::string_view str) { \
-    return util::Status(error::CODE, str.data());          \
+    return util::Status(StatusCode::k##FUNC, str.data());  \
   }                                                        \
   inline bool Is##FUNC(const util::Status &status) {       \
-    return status.code() == error::CODE;                   \
+    return status.code() == StatusCode::k##FUNC;           \
   }
 
-DECLARE_ERROR(Cancelled, CANCELLED)
-DECLARE_ERROR(InvalidArgument, INVALID_ARGUMENT)
-DECLARE_ERROR(NotFound, NOT_FOUND)
-DECLARE_ERROR(AlreadyExists, ALREADY_EXISTS)
-DECLARE_ERROR(ResourceExhausted, RESOURCE_EXHAUSTED)
-DECLARE_ERROR(Unavailable, UNAVAILABLE)
-DECLARE_ERROR(FailedPrecondition, FAILED_PRECONDITION)
-DECLARE_ERROR(OutOfRange, OUT_OF_RANGE)
-DECLARE_ERROR(Unimplemented, UNIMPLEMENTED)
-DECLARE_ERROR(Internal, INTERNAL)
-DECLARE_ERROR(Aborted, ABORTED)
-DECLARE_ERROR(DeadlineExceeded, DEADLINE_EXCEEDED)
-DECLARE_ERROR(DataLoss, DATA_LOSS)
-DECLARE_ERROR(Unknown, UNKNOWN)
-DECLARE_ERROR(PermissionDenied, PERMISSION_DENIED)
-DECLARE_ERROR(Unauthenticated, UNAUTHENTICATED)
+DECLARE_ERROR(Cancelled)
+DECLARE_ERROR(InvalidArgument)
+DECLARE_ERROR(NotFound)
+DECLARE_ERROR(AlreadyExists)
+DECLARE_ERROR(ResourceExhausted)
+DECLARE_ERROR(Unavailable)
+DECLARE_ERROR(FailedPrecondition)
+DECLARE_ERROR(OutOfRange)
+DECLARE_ERROR(Unimplemented)
+DECLARE_ERROR(Internal)
+DECLARE_ERROR(Aborted)
+DECLARE_ERROR(DeadlineExceeded)
+DECLARE_ERROR(DataLoss)
+DECLARE_ERROR(Unknown)
+DECLARE_ERROR(PermissionDenied)
+DECLARE_ERROR(Unauthenticated)
+
+#define GTL_LOC (0)
 
 class StatusBuilder {
  public:
-  explicit StatusBuilder(error::Code code) : code_(code) {}
+  explicit StatusBuilder(StatusCode code) : code_(code) {}
+  explicit StatusBuilder(StatusCode code, int loc) : code_(code) {}
 
   template <typename T>
   StatusBuilder &operator<<(const T &value) {
@@ -495,14 +402,15 @@ class StatusBuilder {
   operator Status() const { return Status(code_, os_.str()); }
 
  private:
-  error::Code code_;
+  StatusCode code_;
   std::ostringstream os_;
 };
 
-#define CHECK_OR_RETURN(condition)                                     \
-  if (condition) {                                                     \
-  } else /* NOLINT */                                                  \
-    return ::sentencepiece::util::StatusBuilder(util::error::INTERNAL) \
+#define CHECK_OR_RETURN(condition)                           \
+  if (condition) {                                           \
+  } else /* NOLINT */                                        \
+    return ::sentencepiece::util::StatusBuilder(             \
+               ::sentencepiece::util::StatusCode::kInternal) \
            << __FILE__ << "(" << __LINE__ << ") [" << #condition << "] "
 
 #define CHECK_EQ_OR_RETURN(a, b) CHECK_OR_RETURN((a) == (b))
@@ -512,13 +420,25 @@ class StatusBuilder {
 #define CHECK_GT_OR_RETURN(a, b) CHECK_OR_RETURN((a) > (b))
 #define CHECK_LT_OR_RETURN(a, b) CHECK_OR_RETURN((a) < (b))
 
+#ifdef IS_BIG_ENDIAN
+inline uint32 Swap32(uint32 x) { return __builtin_bswap32(x); }
+#endif
+
 }  // namespace util
 
-namespace thread {
+namespace port {
+template <typename T>
+void STLDeleteElements(std::vector<T *> *vec) {
+  for (auto item : *vec) {
+    delete item;
+  }
+  vec->clear();
+}
+}  // namespace port
 
 class ThreadPool {
  public:
-  ThreadPool() {}
+  ThreadPool(int32 n) {}
   virtual ~ThreadPool() {
     for (auto &task : tasks_) {
       task.join();
@@ -526,10 +446,10 @@ class ThreadPool {
   }
 
   void Schedule(std::function<void()> closure) { tasks_.emplace_back(closure); }
+  void StartWorkers() {}
 
  private:
   std::vector<std::thread> tasks_;
 };
-}  // namespace thread
 }  // namespace sentencepiece
 #endif  // UTIL_H_

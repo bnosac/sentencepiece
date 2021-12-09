@@ -1,4 +1,3 @@
-#include <Rcpp.h>
 // Copyright 2016 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,10 +15,10 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
-#include <setjmp.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <iostream>
 #include <memory>
 #include <string>
@@ -27,7 +26,6 @@
 #include <vector>
 
 #include "config.h"
-#include "flags.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
 #define OS_WIN
@@ -91,11 +89,6 @@ std::string WideToUtf8(const std::wstring &input);
 }  // namespace win32
 #endif
 
-namespace flags {
-int GetMinLogLevel();
-void SetMinLogLevel(int minloglevel);
-}  // namespace flags
-
 namespace error {
 
 void Abort();
@@ -108,7 +101,7 @@ class Die {
  public:
   explicit Die(bool die) : die_(die) {}
   ~Die() {
-    Rcpp::Rcout << std::endl;
+    std::cerr << std::endl;
     if (die_) {
       Abort();
     }
@@ -122,7 +115,7 @@ class Die {
 template <typename T>
 T &&CheckNotNull(const char *file, int line, const char *exprtext, T &&t) {
   if (t == nullptr) {
-    Rcpp::Rcout << file << "(" << line << ") " << exprtext;
+    std::cerr << file << "(" << line << ") " << exprtext;
     Abort();
   }
   return std::forward<T>(t);
@@ -138,6 +131,9 @@ enum LogSeverity {
   LOG_SEVERITY_SIZE = 4,
 };
 
+int GetMinLogLevel();
+void SetMinLogLevel(int v);
+
 inline const char *BaseName(const char *path) {
 #ifdef OS_WIN
   const char *p = strrchr(path, '\\');
@@ -151,20 +147,20 @@ inline const char *BaseName(const char *path) {
 }  // namespace sentencepiece
 
 #define LOG(severity)                                                        \
-  (sentencepiece::flags::GetMinLogLevel() >                                  \
+  (::sentencepiece::logging::GetMinLogLevel() >                              \
    ::sentencepiece::logging::LOG_##severity)                                 \
       ? 0                                                                    \
       : ::sentencepiece::error::Die(                                         \
             ::sentencepiece::logging::LOG_##severity >=                      \
             ::sentencepiece::logging::LOG_FATAL) &                           \
-            Rcpp::Rcout << ::sentencepiece::logging::BaseName(__FILE__) << "(" \
+            std::cerr << ::sentencepiece::logging::BaseName(__FILE__) << "(" \
                       << __LINE__ << ") "                                    \
                       << "LOG(" << #severity << ") "
 
 #define CHECK(condition)                                                      \
   (condition) ? 0                                                             \
               : ::sentencepiece::error::Die(true) &                           \
-                    Rcpp::Rcout << ::sentencepiece::logging::BaseName(__FILE__) \
+                    std::cerr << ::sentencepiece::logging::BaseName(__FILE__) \
                               << "(" << __LINE__ << ") [" << #condition       \
                               << "] "
 
@@ -180,7 +176,7 @@ inline const char *BaseName(const char *path) {
       ::sentencepiece::logging::BaseName(__FILE__), __LINE__, \
       "'" #val "' Must be non NULL", (val))
 
-//#define FRIEND_TEST(a, b) friend class a##_Test_##b;
+#define FRIEND_TEST(a, b) friend class a##_Test_##b;
 
 #define CHECK_OK(expr)                         \
   do {                                         \

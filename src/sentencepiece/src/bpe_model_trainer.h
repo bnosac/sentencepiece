@@ -17,10 +17,10 @@
 
 #include <set>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "sentencepiece_model.pb.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "trainer_interface.h"
 
 namespace sentencepiece {
@@ -30,8 +30,10 @@ namespace bpe {
 class Trainer : public TrainerInterface {
  public:
   Trainer(const TrainerSpec &trainer_spec,
-          const NormalizerSpec &normalizer_spec)
-      : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec) {}
+          const NormalizerSpec &normalizer_spec,
+          const NormalizerSpec &denormalizer_spec)
+      : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec,
+                                           denormalizer_spec) {}
 
   util::Status Train() override;
 
@@ -109,7 +111,7 @@ class Trainer : public TrainerInterface {
   void UpdateActiveSymbols();
 
   // All unique symbols. Key is a fingerprint of Symbol.
-  std::unordered_map<uint64, Symbol *> symbols_cache_;
+  absl::flat_hash_map<uint64, Symbol *> symbols_cache_;
 
   // Set of symbols from which we find the best symbol in each iteration.
   std::set<Symbol *> active_symbols_;

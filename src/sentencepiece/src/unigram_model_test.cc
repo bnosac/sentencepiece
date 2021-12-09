@@ -14,14 +14,16 @@
 
 #include "unigram_model.h"
 
+#include <cmath>
 #include <map>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include "sentencepiece_model.pb.h"
+#include "sentencepiece_processor.h"
 #include "testharness.h"
+#include "third_party/absl/strings/str_cat.h"
+#include "third_party/absl/strings/str_join.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -160,11 +162,11 @@ TEST(LatticeTest, InsertTest) {
 TEST(LatticeTest, ViterbiFromIncompleteLatticeTest) {
   Lattice lattice;
   lattice.SetSentence("ABC");
-  EXPECT_TRUE(lattice.Viterbi().empty());
+  EXPECT_TRUE(lattice.Viterbi().first.empty());
 
   // Still incomplete
   lattice.Insert(0, 1);
-  EXPECT_TRUE(lattice.Viterbi().empty());
+  EXPECT_TRUE(lattice.Viterbi().first.empty());
 
   lattice.Insert(1, 1);
   lattice.Insert(2, 1);
@@ -176,7 +178,7 @@ std::string GetTokenized(const std::vector<Lattice::Node *> &nodes) {
   for (auto *node : nodes) {
     tokens.push_back(std::string(node->piece));
   }
-  return string_util::Join(tokens, " ");
+  return absl::StrJoin(tokens, " ");
 }
 
 void InsertWithScore(Lattice *lattice, int pos, int length, float score) {
@@ -197,16 +199,16 @@ TEST(LatticeTest, ViterbiTest) {
   InsertWithScore(&lattice, 0, 1, 0.0);  // A
   InsertWithScore(&lattice, 1, 1, 0.0);  // B
   InsertWithScore(&lattice, 2, 1, 0.0);  // C
-  EXPECT_EQ("A B C", GetTokenized(lattice.Viterbi()));
+  EXPECT_EQ("A B C", GetTokenized(lattice.Viterbi().first));
 
   InsertWithScore(&lattice, 0, 2, 2.0);  // AB
-  EXPECT_EQ("AB C", GetTokenized(lattice.Viterbi()));
+  EXPECT_EQ("AB C", GetTokenized(lattice.Viterbi().first));
 
   InsertWithScore(&lattice, 1, 2, 5.0);  // BC
-  EXPECT_EQ("A BC", GetTokenized(lattice.Viterbi()));
+  EXPECT_EQ("A BC", GetTokenized(lattice.Viterbi().first));
 
   InsertWithScore(&lattice, 0, 3, 10.0);  // ABC
-  EXPECT_EQ("ABC", GetTokenized(lattice.Viterbi()));
+  EXPECT_EQ("ABC", GetTokenized(lattice.Viterbi().first));
 }
 
 TEST(LatticeTest, NBestTest) {
@@ -220,19 +222,172 @@ TEST(LatticeTest, NBestTest) {
   InsertWithScore(&lattice, 1, 2, 5.0);   // BC
   InsertWithScore(&lattice, 0, 3, 10.0);  // ABC
 
-  auto nbests = lattice.NBest(10);
+  auto nbests = lattice.NBest(10, false, 0.0);
   EXPECT_EQ(4, nbests.size());
 
-  EXPECT_EQ("ABC", GetTokenized(nbests[0]));
-  EXPECT_EQ("A BC", GetTokenized(nbests[1]));
-  EXPECT_EQ("AB C", GetTokenized(nbests[2]));
-  EXPECT_EQ("A B C", GetTokenized(nbests[3]));
+  EXPECT_EQ("ABC", GetTokenized(nbests[0].first));
+  EXPECT_EQ("A BC", GetTokenized(nbests[1].first));
+  EXPECT_EQ("AB C", GetTokenized(nbests[2].first));
+  EXPECT_EQ("A B C", GetTokenized(nbests[3].first));
 
-  auto nbests0 = lattice.NBest(0);
+  auto nbests0 = lattice.NBest(0, false, 0.0);
   EXPECT_TRUE(nbests0.empty());
 
-  auto nbests1 = lattice.NBest(1);
+  auto nbests1 = lattice.NBest(1, false, 0.0);
   EXPECT_EQ(nbests1.size(), 1);
+}
+
+TEST(LatticeTest, NBestSampleTest) {
+  Lattice lattice;
+  lattice.SetSentence("ABC");
+
+  InsertWithScore(&lattice, 0, 1, 0.0);  // A
+  InsertWithScore(&lattice, 1, 1, 0.0);  // B
+  InsertWithScore(&lattice, 2, 1, 0.1);  // C
+  InsertWithScore(&lattice, 0, 2, 0.2);  // AB
+  InsertWithScore(&lattice, 1, 2, 0.5);  // BC
+  InsertWithScore(&lattice, 0, 3, 1.0);  // ABC
+
+  // Calculate expected probabilities of each path
+  // Note that sampling without replacement affects the expected frequencies!
+  const std::vector<double> kTheta = {0.0, 0.01, 0.5, 0.7, 1.0};
+  for (const auto theta : kTheta) {
+    std::vector<std::string> strings = {"ABC", "AB C", "A BC", "A B C"};
+    std::map<std::string, float> probs;
+    probs["ABC"] = std::exp(theta * 1.0);
+    probs["AB C"] = std::exp(theta * (0.2 + 0.1));
+    probs["A BC"] = std::exp(theta * (0.0 + 0.5));
+    probs["A B C"] = std::exp(theta * (0.0 + 0.0 + 0.1));
+
+    for (const auto &it : strings) {
+      EXPECT_EQ(1, probs.count(it));
+    }
+
+    double Z = 0.0;
+    for (const auto &it : probs) Z += it.second;
+    for (auto &it : probs) it.second /= Z;
+
+    std::map<std::pair<std::string, std::string>, float> pair_probs;
+    for (const auto first : strings) {
+      for (const auto second : strings) {
+        if (first == second) {
+          pair_probs[std::make_pair(first, second)] = 0;
+        } else {
+          float first_prob = probs[first];
+          float second_prob = probs[second] / (1 - first_prob);
+          pair_probs[std::make_pair(first, second)] = first_prob * second_prob;
+        }
+      }
+    }
+
+    std::map<std::string, float> inclusion_probs;
+    for (const auto string : strings) {
+      float inclusion_prob = 0.0;
+      for (const auto other_string : strings) {
+        inclusion_prob += pair_probs[std::make_pair(string, other_string)];
+      }
+      for (const auto other_string : strings) {
+        inclusion_prob += pair_probs[std::make_pair(other_string, string)];
+      }
+      inclusion_probs[string] = inclusion_prob / 2;
+    }
+
+    int kTrials = 10000;
+
+    std::vector<int> kNumSamples = {1, 2};
+
+    for (const auto num_samples : kNumSamples) {
+      std::map<std::string, int> counts;
+      for (int i = 0; i < kTrials; i++) {
+        auto nbests = lattice.NBest(num_samples, true, theta);
+        for (const auto nbest : nbests) {
+          counts[GetTokenized(nbest.first)]++;
+        }
+      }
+
+      EXPECT_EQ(inclusion_probs.size(), counts.size());
+      // If we take multiple samples WOR, we have to use corrected probs.
+      std::map<std::string, float> probs_to_use =
+          (num_samples == 1 ? probs : inclusion_probs);
+
+      for (const auto &it : probs_to_use) {
+        EXPECT_NEAR(it.second, 1.0 * counts[it.first] / (kTrials * num_samples),
+                    0.02);
+      }
+    }
+  }
+}
+
+TEST(LatticeTest, CalculateEntropyTest) {
+  Lattice lattice;
+  lattice.SetSentence("ABC");
+
+  InsertWithScore(&lattice, 0, 1, 0.0);  // A
+  InsertWithScore(&lattice, 1, 1, 0.0);  // B
+  InsertWithScore(&lattice, 2, 1, 0.1);  // C
+  InsertWithScore(&lattice, 0, 2, 0.2);  // AB
+  InsertWithScore(&lattice, 1, 2, 0.5);  // BC
+  InsertWithScore(&lattice, 0, 3, 1.0);  // ABC
+
+  // Calculate expected probabilities of each path
+  const std::vector<double> kTheta = {0.0, 0.01, 0.5, 0.7, 1.0};
+  for (const auto theta : kTheta) {
+    std::vector<std::string> strings = {"ABC", "AB C", "A BC", "A B C"};
+    std::map<std::string, float> probs;
+    probs["ABC"] = std::exp(theta * 1.0);
+    probs["AB C"] = std::exp(theta * (0.2 + 0.1));
+    probs["A BC"] = std::exp(theta * (0.0 + 0.5));
+    probs["A B C"] = std::exp(theta * (0.0 + 0.0 + 0.1));
+
+    double Z = 0.0;
+    for (const auto &it : probs) Z += it.second;
+    for (auto &it : probs) it.second /= Z;
+
+    for (const auto &it : strings) {
+      EXPECT_EQ(1, probs.count(it));
+    }
+    float entropy = 0.0;
+    for (const auto &it : probs) {
+      entropy += (it.second * std::log(it.second));
+    }
+    EXPECT_NEAR(-entropy, lattice.CalculateEntropy(theta), 0.02);
+  }
+}
+
+TEST(LatticeTest, ForwardAlgorithmTest) {
+  Lattice lattice;
+  lattice.SetSentence("ABC");
+
+  InsertWithScore(&lattice, 0, 1, 0.0);  // A
+  InsertWithScore(&lattice, 1, 1, 0.0);  // B
+  InsertWithScore(&lattice, 2, 1, 0.1);  // C
+  InsertWithScore(&lattice, 0, 2, 0.2);  // AB
+  InsertWithScore(&lattice, 1, 2, 0.5);  // BC
+  InsertWithScore(&lattice, 0, 3, 1.0);  // ABC
+
+  const std::vector<float> kTheta = {0.0, 0.01, 0.5, 0.7, 1.0};
+  for (const auto theta : kTheta) {
+    std::vector<float> alpha = lattice.ForwardAlgorithm(theta);
+    EXPECT_EQ(alpha.size(), 8);  // 6 nodes, plus BOS, EOS
+    // only alpha[C], alpha[EOS] have non-zero alpha
+    for (int i : {0, 1, 2, 3}) {
+      for (const auto &node : lattice.begin_nodes(i)) {
+        if (i < 2) {
+          EXPECT_EQ(alpha[node->node_id], 0.0);
+        } else if (i == 2) {
+          float Z =
+              std::log(std::exp(theta * (0.0 + 0.0)) + std::exp(theta * 0.2));
+          EXPECT_EQ(alpha[node->node_id], Z);
+        } else if (i == 3) {
+          float Z = std::log(std::exp(theta * (0.0 + 0.0 + 0.1)) +  // A + B + C
+                             std::exp(theta * (0.2 + 0.1)) +        // AB + C
+                             std::exp(theta * (0.0 + 0.5)) +        // A + BC
+                             std::exp(theta * 1.0));                // ABC
+          EXPECT_EQ(Z, alpha[node->node_id]);
+        }
+      }
+    }
+  }
 }
 
 TEST(LatticeTest, PopulateMarginalTest) {
@@ -267,7 +422,7 @@ TEST(LatticeTest, PopulateMarginalTest) {
   EXPECT_NEAR(p2 / Z, probs[3], 0.001);         // AB
   EXPECT_NEAR(p3 / Z, probs[4], 0.001);         // BC
   EXPECT_NEAR(p4 / Z, probs[5], 0.001);         // ABC
-  EXPECT_NEAR(log(Z), logZ, 0.001);
+  EXPECT_NEAR(std::log(static_cast<double>(Z)), logZ, 0.001);
 }
 
 TEST(LatticeTest, SampleTest) {
@@ -281,9 +436,9 @@ TEST(LatticeTest, SampleTest) {
   InsertWithScoreAndId(&lattice, 1, 2, 1.7, 4);  // BC
   InsertWithScoreAndId(&lattice, 0, 3, 1.8, 5);  // ABC
 
-  const float kTheta[] = {0.0, 0.01, 0.5, 0.7, 1.0};
-  for (int i = 0; i < arraysize(kTheta); ++i) {
-    std::map<std::string, float> probs;
+  const std::vector<double> kTheta = {0.0, 0.01, 0.5, 0.7, 1.0};
+  for (int i = 0; i < kTheta.size(); ++i) {
+    std::map<std::string, double> probs;
     // Expands all paths in the lattice.
     probs["A B C"] = exp(kTheta[i] * (1.0 + 1.2 + 1.5));  // A B C
     probs["AB C"] = exp(kTheta[i] * (1.6 + 1.5));         // AB C
@@ -291,7 +446,7 @@ TEST(LatticeTest, SampleTest) {
     probs["ABC"] = exp(kTheta[i] * 1.8);                  // ABC
 
     // Computes expected probabilities.
-    float Z = 0.0;
+    double Z = 0.0;
     for (const auto &it : probs) Z += it.second;
     for (auto &it : probs) it.second /= Z;
 
@@ -325,6 +480,21 @@ ModelProto MakeBaseModelProto() {
   return model_proto;
 }
 
+// Returns model protos in parameterized tests.
+const std::vector<EncoderVersion> &GetEncoderVersions() {
+  static const std::vector<EncoderVersion> &v =
+      *new std::vector<EncoderVersion>{EncoderVersion::kOptimized,
+                                       EncoderVersion::kOriginal};
+  return v;
+}
+
+class UnigramModelTest : public test::TestWithParam<EncoderVersion> {
+ protected:
+  void SetUp() override { encoder_version_ = GetParam(); }
+  void TearDown() override {}
+  EncoderVersion encoder_version_;
+};
+
 void AddPiece(ModelProto *model_proto, const std::string &piece,
               float score = 0.0) {
   auto *sp = model_proto->add_pieces();
@@ -345,7 +515,103 @@ TEST(UnigramModelTest, SetUnigramModelTest) {
             model.model_proto().SerializeAsString());
 }
 
-TEST(UnigramModelTest, PieceToIdTest) {
+TEST(UnigramModelTest, SampleEncodeAndScoreTest) {
+  // Test whether inclusion probabilities are correct
+  ModelProto model_proto = MakeBaseModelProto();
+  AddPiece(&model_proto, "A", 0.0);    // 3
+  AddPiece(&model_proto, "B", 0.0);    // 4
+  AddPiece(&model_proto, "C", 0.1);    // 5
+  AddPiece(&model_proto, "AB", 0.2);   // 6
+  AddPiece(&model_proto, "BC", 0.5);   // 7
+  AddPiece(&model_proto, "ABC", 1.0);  // 8
+
+  Model model(model_proto);
+
+  Lattice lattice;
+  lattice.SetSentence("ABC");
+  model.PopulateNodes(&lattice);
+
+  std::vector<float> kTheta = {0.0, 1.0};
+
+  for (const auto theta : kTheta) {
+    std::vector<std::string> strings = {"ABC", "AB C", "A BC", "A B C"};
+    std::map<std::string, float> probs;
+    probs["ABC"] = std::exp(theta * 1.0);
+    probs["AB C"] = std::exp(theta * (0.2 + 0.1));
+    probs["A BC"] = std::exp(theta * (0.0 + 0.5));
+    probs["A B C"] = std::exp(theta * (0.0 + 0.0 + 0.1));
+
+    for (const auto &it : strings) {
+      EXPECT_EQ(1, probs.count(it));
+    }
+
+    double Z = 0.0;
+    for (const auto &it : probs) Z += it.second;
+    for (auto &it : probs) it.second /= Z;
+
+    std::map<std::pair<std::string, std::string>, float> pair_probs;
+    for (const auto first : strings) {
+      for (const auto second : strings) {
+        if (first == second) {
+          pair_probs[std::make_pair(first, second)] = 0;
+        } else {
+          float first_prob = probs[first];
+          float second_prob = probs[second] / (1 - first_prob);
+          pair_probs[std::make_pair(first, second)] = first_prob * second_prob;
+        }
+      }
+    }
+
+    std::map<std::string, float> inclusion_probs;
+    for (const auto string : strings) {
+      float inclusion_prob = 0.0;
+      for (const auto other_string : strings) {
+        inclusion_prob += pair_probs[std::make_pair(string, other_string)];
+      }
+      for (const auto other_string : strings) {
+        inclusion_prob += pair_probs[std::make_pair(other_string, string)];
+      }
+      inclusion_probs[string] = inclusion_prob / 2;
+    }
+    std::vector<int> kNumSamples = {1, 2};
+
+    for (const auto num_samples : kNumSamples) {
+      std::map<std::string, int> counts;
+      std::map<std::string, float> scores;
+      int kTrials = 50000;
+      for (int i = 0; i < kTrials; i++) {
+        NBestEncodeResult sample =
+            model.SampleEncodeAndScore("ABC", theta, num_samples, true, false);
+
+        for (const auto &it : sample) {
+          std::vector<std::string> tokens;
+          for (const auto &inner_it : it.first) {
+            tokens.push_back(std::string(inner_it.first));
+          }
+          std::string sample_string = absl::StrJoin(tokens, " ");
+          counts[sample_string] += 1;
+          // use the fact that E(1_{i in sample} / score of i) = 1
+          // see https://arxiv.org/pdf/1903.06059.pdf appendix D
+          scores[sample_string] += std::exp(-it.second);
+        }
+      }
+
+      // Check that counts and probs are correct
+      std::map<std::string, float> probs_to_use =
+          (num_samples == 1 ? probs : inclusion_probs);
+
+      for (const auto &it : scores) Z += it.second;
+      for (const auto &it : probs_to_use) {
+        EXPECT_NEAR(it.second, 1.0 * counts[it.first] / (kTrials * num_samples),
+                    0.02);
+        // The expectation is quite loose, use a higher tolerance
+        EXPECT_NEAR(1.0, scores[it.first] / kTrials, 0.20);
+      }
+    }
+  }
+}
+
+TEST_P(UnigramModelTest, PieceToIdTest) {
   ModelProto model_proto = MakeBaseModelProto();
 
   AddPiece(&model_proto, "a", 0.1);
@@ -353,7 +619,9 @@ TEST(UnigramModelTest, PieceToIdTest) {
   AddPiece(&model_proto, "c", 0.3);
   AddPiece(&model_proto, "d", 0.4);
 
-  const Model model(model_proto);
+  Model model(model_proto);
+  EXPECT_TRUE(model.SetEncoderVersion(encoder_version_).ok());
+
   EXPECT_EQ(model_proto.SerializeAsString(),
             model.model_proto().SerializeAsString());
 
@@ -364,6 +632,7 @@ TEST(UnigramModelTest, PieceToIdTest) {
   EXPECT_EQ(1, model.PieceToId("<s>"));
   EXPECT_EQ(2, model.PieceToId("</s>"));
   EXPECT_EQ(3, model.PieceToId("a"));
+  EXPECT_EQ(3, model.PieceToId(absl::string_view("a b", 1)));
   EXPECT_EQ(4, model.PieceToId("b"));
   EXPECT_EQ(5, model.PieceToId("c"));
   EXPECT_EQ(6, model.PieceToId("d"));
@@ -405,10 +674,11 @@ TEST(UnigramModelTest, PieceToIdTest) {
   EXPECT_TRUE(model.Encode("").empty());
 }
 
-TEST(UnigramModelTest, PopulateNodesAllUnknownsTest) {
+TEST_P(UnigramModelTest, PopulateNodesAllUnknownsTest) {
   ModelProto model_proto = MakeBaseModelProto();
   AddPiece(&model_proto, "x");
-  const Model model(model_proto);
+  Model model(model_proto);
+  EXPECT_TRUE(model.SetEncoderVersion(encoder_version_).ok());
 
   Lattice lattice;
   lattice.SetSentence("abc");
@@ -423,7 +693,7 @@ TEST(UnigramModelTest, PopulateNodesAllUnknownsTest) {
   EXPECT_EQ(0, lattice.begin_nodes(2)[0]->id);
 }
 
-TEST(UnigramModelTest, PopulateNodesTest) {
+TEST_P(UnigramModelTest, PopulateNodesTest) {
   ModelProto model_proto = MakeBaseModelProto();
 
   AddPiece(&model_proto, "a", 0.1);   // 3
@@ -431,7 +701,8 @@ TEST(UnigramModelTest, PopulateNodesTest) {
   AddPiece(&model_proto, "ab", 0.3);  // 5
   AddPiece(&model_proto, "bc", 0.4);  // 6
 
-  const Model model(model_proto);
+  Model model(model_proto);
+  EXPECT_TRUE(model.SetEncoderVersion(encoder_version_).ok());
 
   Lattice lattice;
   lattice.SetSentence("abc");
@@ -454,7 +725,7 @@ TEST(UnigramModelTest, PopulateNodesTest) {
   EXPECT_NEAR(0.4, lattice.begin_nodes(1)[1]->score, 0.001);
 }
 
-TEST(UnigramModelTest, PopulateNodesWithUnusedTest) {
+TEST_P(UnigramModelTest, PopulateNodesWithUnusedTest) {
   ModelProto model_proto = MakeBaseModelProto();
 
   AddPiece(&model_proto, "a", 0.1);   // 3
@@ -465,7 +736,8 @@ TEST(UnigramModelTest, PopulateNodesWithUnusedTest) {
   model_proto.mutable_pieces(5)->set_type(ModelProto::SentencePiece::UNUSED);
   model_proto.mutable_pieces(6)->set_type(ModelProto::SentencePiece::UNUSED);
 
-  const Model model(model_proto);
+  Model model(model_proto);
+  EXPECT_TRUE(model.SetEncoderVersion(encoder_version_).ok());
 
   Lattice lattice;
   lattice.SetSentence("abc");
@@ -480,9 +752,8 @@ TEST(UnigramModelTest, PopulateNodesWithUnusedTest) {
   EXPECT_EQ(0, lattice.begin_nodes(2)[0]->id);
 }
 
-TEST(UnigramModelTest, ModelNBestTest) {
+TEST_P(UnigramModelTest, ModelNBestTest) {
   ModelProto model_proto = MakeBaseModelProto();
-
   AddPiece(&model_proto, "a", 0.0);     // 3
   AddPiece(&model_proto, "b", 0.0);     // 4
   AddPiece(&model_proto, "c", 0.0);     // 5
@@ -490,7 +761,8 @@ TEST(UnigramModelTest, ModelNBestTest) {
   AddPiece(&model_proto, "bc", 5.0);    // 7
   AddPiece(&model_proto, "abc", 10.0);  // 8
 
-  const Model model(model_proto);
+  Model model(model_proto);
+  EXPECT_TRUE(model.SetEncoderVersion(encoder_version_).ok());
 
   auto nbest = model.NBestEncode("", 10);
   EXPECT_EQ(1, nbest.size());
@@ -506,9 +778,8 @@ TEST(UnigramModelTest, ModelNBestTest) {
   EXPECT_FALSE(sample.empty());
 }
 
-TEST(UnigramModelTest, EncodeTest) {
+TEST_P(UnigramModelTest, EncodeTest) {
   ModelProto model_proto = MakeBaseModelProto();
-
   AddPiece(&model_proto, "ab", 0.0);         // 3
   AddPiece(&model_proto, "cd", -0.1);        // 4
   AddPiece(&model_proto, "abc", -0.2);       // 5
@@ -529,7 +800,8 @@ TEST(UnigramModelTest, EncodeTest) {
   model_proto.mutable_pieces(12)->set_type(  // r
       ModelProto::SentencePiece::USER_DEFINED);
 
-  const Model model(model_proto);
+  Model model(model_proto);
+  EXPECT_TRUE(model.SetEncoderVersion(encoder_version_).ok());
 
   EncodeResult result;
 
@@ -597,7 +869,7 @@ TEST(UnigramModelTest, EncodeTest) {
   EXPECT_EQ("cd", result[3].first);
 }
 
-TEST(UnigramModelTest, EncodeWithUnusedTest) {
+TEST_P(UnigramModelTest, EncodeWithUnusedTest) {
   ModelProto model_proto = MakeBaseModelProto();
 
   AddPiece(&model_proto, "abcd", 10.0);  // 3
@@ -611,7 +883,8 @@ TEST(UnigramModelTest, EncodeWithUnusedTest) {
 
   // No unused.
   {
-    const Model model(model_proto);
+    Model model(model_proto);
+    EXPECT_TRUE(model.SetEncoderVersion(encoder_version_).ok());
     const auto result = model.Encode("abcd");
     EXPECT_EQ(1, result.size());
     EXPECT_EQ("abcd", result[0].first);
@@ -619,7 +892,8 @@ TEST(UnigramModelTest, EncodeWithUnusedTest) {
 
   {
     model_proto.mutable_pieces(3)->set_type(ModelProto::SentencePiece::UNUSED);
-    const Model model(model_proto);
+    Model model(model_proto);
+    EXPECT_TRUE(model.SetEncoderVersion(encoder_version_).ok());
     const auto result = model.Encode("abcd");
     EXPECT_EQ(2, result.size());
     EXPECT_EQ("abc", result[0].first);
@@ -629,7 +903,8 @@ TEST(UnigramModelTest, EncodeWithUnusedTest) {
   {
     model_proto.mutable_pieces(3)->set_type(ModelProto::SentencePiece::UNUSED);
     model_proto.mutable_pieces(5)->set_type(ModelProto::SentencePiece::UNUSED);
-    const Model model(model_proto);
+    Model model(model_proto);
+    EXPECT_TRUE(model.SetEncoderVersion(encoder_version_).ok());
     const auto result = model.Encode("abcd");
     EXPECT_EQ(2, result.size());
     EXPECT_EQ("abc", result[0].first);
@@ -642,13 +917,40 @@ TEST(UnigramModelTest, EncodeWithUnusedTest) {
     model_proto.mutable_pieces(3)->set_type(ModelProto::SentencePiece::UNUSED);
     model_proto.mutable_pieces(4)->set_type(ModelProto::SentencePiece::UNUSED);
     model_proto.mutable_pieces(5)->set_type(ModelProto::SentencePiece::NORMAL);
-    const Model model(model_proto);
+    Model model(model_proto);
+    EXPECT_TRUE(model.SetEncoderVersion(encoder_version_).ok());
     const auto result = model.Encode("abcd");
     EXPECT_EQ(2, result.size());
     EXPECT_EQ("ab", result[0].first);
     EXPECT_EQ("cd", result[1].first);
   }
 }
+
+TEST_P(UnigramModelTest, VerifyOutputsEquivalent) {
+  ModelProto model_proto = MakeBaseModelProto();
+
+  AddPiece(&model_proto, "abcd", 10.0);  // 3
+  AddPiece(&model_proto, "abc", 5.0);    // 4
+  AddPiece(&model_proto, "ab", 6.0);     // 5
+  AddPiece(&model_proto, "cd", 4.0);     // 6
+  AddPiece(&model_proto, "a", 4.0);      // 7
+  AddPiece(&model_proto, "b", 1.9);      // 8
+  AddPiece(&model_proto, "c", 2.0);      // 9
+  AddPiece(&model_proto, "d", 1.0);      // 10
+  Model model(model_proto);
+  EXPECT_TRUE(model.SetEncoderVersion(encoder_version_).ok());
+  // Equivalent outputs.
+  EXPECT_TRUE(model.VerifyOutputsEquivalent("", ""));
+  EXPECT_TRUE(model.VerifyOutputsEquivalent("a b", "a b"));
+  EXPECT_TRUE(model.VerifyOutputsEquivalent("abcd", "ab cd"));
+
+  // Inequivalent outputs.
+  EXPECT_FALSE(model.VerifyOutputsEquivalent("a", "a b"));
+  EXPECT_FALSE(model.VerifyOutputsEquivalent("ab", "a b"));
+}
+
+INSTANTIATE_TEST_SUITE_P(ParametrizedUnigramModelTests, UnigramModelTest,
+                         test::ValuesIn(GetEncoderVersions()));
 
 }  // namespace unigram
 }  // namespace sentencepiece

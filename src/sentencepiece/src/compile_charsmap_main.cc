@@ -17,16 +17,18 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+
 #include "builder.h"
 #include "filesystem.h"
-#include "flags.h"
+#include "init.h"
 #include "sentencepiece_processor.h"
+#include "third_party/absl/flags/flag.h"
 #include "third_party/absl/strings/string_view.h"
 
 using sentencepiece::normalizer::Builder;
-using sentencepiece::util::Status;
 
-DEFINE_bool(output_precompiled_header, false, "make normalization_rule.h file");
+ABSL_FLAG(bool, output_precompiled_header, false,
+          "make normalization_rule.h file");
 
 namespace sentencepiece {
 namespace {
@@ -154,10 +156,11 @@ struct BinaryBlob {
 }  // namespace sentencepiece
 
 int main(int argc, char **argv) {
-  sentencepiece::flags::ParseCommandLineFlags(argc, argv);
+  sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
 
-  const std::vector<
-      std::pair<std::string, std::function<Status(Builder::CharsMap *)>>>
+  const std::vector<std::pair<
+      std::string,
+      std::function<sentencepiece::util::Status(Builder::CharsMap *)>>>
       kRuleList = {{"nfkc", Builder::BuildNFKCMap},
                    {"nmt_nfkc", Builder::BuildNmtNFKCMap},
                    {"nfkc_cf", Builder::BuildNFKC_CFMap},
@@ -177,7 +180,7 @@ int main(int argc, char **argv) {
     CHECK_OK(Builder::SaveCharsMap(p.first + ".tsv", normalized_map));
   }
 
-  if (FLAGS_output_precompiled_header) {
+  if (absl::GetFlag(FLAGS_output_precompiled_header)) {
     constexpr char kPrecompiledHeaderFileName[] = "normalization_rule.h";
     auto output =
         sentencepiece::filesystem::NewWritableFile(kPrecompiledHeaderFileName);

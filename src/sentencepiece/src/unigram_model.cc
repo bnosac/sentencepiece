@@ -12,18 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "unigram_model.h"
-
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
+#include <complex>
 #include <map>
 #include <queue>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "third_party/absl/memory/memory.h"
+#include "third_party/absl/strings/str_split.h"
 #include "third_party/absl/strings/string_view.h"
+#include "unigram_model.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -32,6 +34,9 @@ namespace {
 
 // Size of nodes pre-allocated in Lattice.
 constexpr size_t kPreallocateLatticeNodeSize = 1024;
+
+constexpr float kUnkPenalty = 10.0;
+constexpr float kEpsilon = 1e-7;
 
 // Returns log(exp(x) + exp(y)).
 // if init_mode is true, returns log(exp(y)) == y.
@@ -48,8 +53,19 @@ inline float LogSumExp(float x, float y, bool init_mode) {
   if (vmax > vmin + kMinusLogEpsilon) {
     return vmax;
   } else {
-    return vmax + log(exp(vmin - vmax) + 1.0);
+    return vmax + log(std::exp(static_cast<double>(vmin - vmax)) + 1.0);
   }
+}
+
+// Returns a sample from a standard Gumbel distribution.
+// If U  ~ U[0, 1], -log(-log U) ~ G(0,1)
+inline float Gumbel() {
+  const float kEpsilon = 1e-7;
+  auto *mt = random::GetRandomGenerator();
+  std::uniform_real_distribution<float> dis(0.0, 1.0);
+  float noise = -std::log(-(std::log(dis(*mt) + kEpsilon)));
+
+  return noise;
 }
 }  // namespace
 
@@ -141,7 +157,7 @@ Lattice::Node *Lattice::Insert(int pos, int length) {
   return node;
 }
 
-std::vector<Lattice::Node *> Lattice::Viterbi() {
+Lattice::LatticePathWithScore Lattice::Viterbi() {
   const int len = size();
 
   for (int pos = 0; pos <= len; ++pos) {
@@ -167,6 +183,7 @@ std::vector<Lattice::Node *> Lattice::Viterbi() {
 
   // backtrace
   std::vector<Node *> results;
+  float score = begin_nodes(len)[0]->backtrace_score;
   for (Node *node = begin_nodes_[len][0]->prev; node->prev != nullptr;
        node = node->prev) {
     results.push_back(node);
@@ -174,29 +191,31 @@ std::vector<Lattice::Node *> Lattice::Viterbi() {
 
   std::reverse(results.begin(), results.end());
 
-  return results;
+  LatticePathWithScore retval = {results, score};
+
+  return retval;
 }
 
-float Lattice::PopulateMarginal(float freq,
-                                std::vector<float> *expected) const {
-  if (expected == nullptr) return 0.0;
-
+std::vector<float> Lattice::ForwardAlgorithm(float theta) const {
   const int len = size();
-
-  // alpha and beta (accumulative log prob) in Forward Backward.
-  // the index of alpha/beta is Node::node_id.
   std::vector<float> alpha(node_allocator_.size(), 0.0);
-  std::vector<float> beta(node_allocator_.size(), 0.0);
 
   for (int pos = 0; pos <= len; ++pos) {
     for (Node *rnode : begin_nodes_[pos]) {
       for (Node *lnode : end_nodes_[pos]) {
-        alpha[rnode->node_id] = LogSumExp(alpha[rnode->node_id],
-                                          lnode->score + alpha[lnode->node_id],
-                                          lnode == end_nodes_[pos][0]);
+        alpha[rnode->node_id] = LogSumExp(
+            alpha[rnode->node_id], theta * lnode->score + alpha[lnode->node_id],
+            lnode == end_nodes_[pos][0]);
       }
     }
   }
+
+  return alpha;
+}
+
+std::vector<float> Lattice::BackwardAlgorithm(float theta) const {
+  const int len = size();
+  std::vector<float> beta(node_allocator_.size(), 0.0);
 
   for (int pos = len; pos >= 0; --pos) {
     for (Node *lnode : end_nodes_[pos]) {
@@ -208,13 +227,30 @@ float Lattice::PopulateMarginal(float freq,
     }
   }
 
+  return beta;
+}
+
+float Lattice::PopulateMarginal(float freq,
+                                std::vector<float> *expected) const {
+  if (expected == nullptr) return 0.0;
+
+  const int len = size();
+
+  // alpha and beta (accumulative log prob) in Forward Backward.
+  // the index of alpha/beta is Node::node_id.
+
+  const auto alpha = ForwardAlgorithm(1.0);
+  const auto beta = BackwardAlgorithm(1.0);
+
   const float Z = alpha[begin_nodes_[len][0]->node_id];
   for (int pos = 0; pos < len; ++pos) {
     for (Node *node : begin_nodes_[pos]) {
       if (node->id >= 0) {
         // the index of |expected| is a Node::id, which is a vocabulary id.
-        (*expected)[node->id] += freq * exp(alpha[node->node_id] + node->score +
-                                            beta[node->node_id] - Z);
+        (*expected)[node->id] +=
+            freq *
+            std::exp(static_cast<double>(alpha[node->node_id] + node->score +
+                                         beta[node->node_id] - Z));
       }
     }
   }
@@ -222,13 +258,46 @@ float Lattice::PopulateMarginal(float freq,
   return freq * Z;
 }
 
-std::vector<std::vector<Lattice::Node *>> Lattice::NBest(size_t nbest_size) {
+float Lattice::CalculateEntropy(float theta) const {
+  const int len = size();
+
+  // alpha[node_id] is the marginal prob of sequence up to start of node
+  // H is entropy of sequence
+  // the index of alpha/H is Node::node_id.
+  std::vector<float> alpha(node_allocator_.size(), 0.0);
+  std::vector<float> H(node_allocator_.size(), 0.0);
+
+  // Populate the forward marginals to get the normalising constant
+  alpha = ForwardAlgorithm(theta);
+
+  // Now populate the forward entropies
+  for (int pos = 0; pos <= len; ++pos) {
+    for (Node *rnode : begin_nodes_[pos]) {
+      for (Node *lnode : end_nodes_[pos]) {
+        // Contribution each lnode makes = p(lnode) * (H(lnode) + log p(lnode))
+
+        // We have to normalise p(lnode) by the marginal contribution it makes
+        const float lnode_transition_prob =
+            ((theta * lnode->score) + alpha[lnode->node_id] -
+             alpha[rnode->node_id]);
+        H[rnode->node_id] += std::exp(lnode_transition_prob) *
+                             (H[lnode->node_id] + lnode_transition_prob);
+      }
+    }
+  }
+
+  return -H[begin_nodes_[len][0]->node_id];
+}
+
+std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
+                                                          bool sample,
+                                                          float theta) {
   if (nbest_size < 1) {
     LOG(WARNING) << "nbest_size >= 1. Returns empty result.";
     return {};
   }
 
-  if (nbest_size == 1) {
+  if (nbest_size == 1 && !sample) {
     return {Viterbi()};
   }
 
@@ -237,6 +306,7 @@ std::vector<std::vector<Lattice::Node *>> Lattice::NBest(size_t nbest_size) {
   // At each partial path x, compute f(x) as follows
   //   f(x) = g(x) + h(x).
   // g(x): the sum of scores from  EOS to the left-most node in x.
+  //       for a complete hypothesis, g(hyp) is the score of the hypothesis.
   // h(x): a heuristic that estimates the largest score from x to BOS.
   // f(x): the priority to pop a new hypothesis from the priority queue.
   //
@@ -262,17 +332,26 @@ std::vector<std::vector<Lattice::Node *>> Lattice::NBest(size_t nbest_size) {
   model::FreeList<Hypothesis> hypothesis_allocator(kPreallocatedHypothesisSize);
 
   Agenda agenda;
-  std::vector<std::vector<Node *>> results;
+  std::vector<Lattice::LatticePathWithScore> results;
 
   auto *eos = hypothesis_allocator.Allocate();
   eos->node = eos_node();
   eos->next = nullptr;
-  eos->fx = eos->node->score;
-  eos->gx = eos->node->score;
-  agenda.push(eos);
+  eos->gx = 0.0;
 
-  // Run Viterbi first to fill backtrace score.
-  Viterbi();
+  std::vector<float> alpha(node_allocator_.size(), 0.0);
+
+  if (sample) {
+    // Run forwards algorithm to get normalising constants
+    alpha = ForwardAlgorithm(theta);
+    // f(eos) = Gumbel(0), as it is the perturbed score of the entire lattice.
+    eos->fx = Gumbel();
+  } else {
+    // Run Viterbi first to fill backtrace score.
+    Viterbi();
+    eos->fx = eos->node->backtrace_score;
+  }
+  agenda.push(eos);
 
   while (!agenda.empty()) {
     auto *top = agenda.top();
@@ -283,21 +362,56 @@ std::vector<std::vector<Lattice::Node *>> Lattice::NBest(size_t nbest_size) {
     if (node == bos_node()) {
       results.resize(results.size() + 1);
       for (auto *n = top->next; n->next != nullptr; n = n->next) {
-        results.back().push_back(n->node);
+        results.back().first.push_back(n->node);
       }
+      results.back().second = top->fx;
       if (results.size() == nbest_size) {
         break;
       }
       continue;
     }
 
+    const int end_nodes_size = end_nodes(node->pos).size();
+    std::vector<float> probs(end_nodes_size, 0.0);
+    std::vector<float> perturbed_probs(end_nodes_size, 0.0);
+    std::vector<double> adjusted_probs(end_nodes_size, 0.0);
+    const float Z = alpha[node->node_id];
+    if (sample) {
+      float max_score = -1e8;
+      // Calculate the marginal and perturbed scores for stochastic search
+      for (int i = 0; i < end_nodes(node->pos).size(); i++) {
+        Node *lnode = end_nodes(node->pos)[i];
+        // Calculate backwards transition score
+        probs[i] = top->gx + alpha[lnode->node_id] + (theta * lnode->score) - Z;
+        perturbed_probs[i] = probs[i] + Gumbel();
+        if (perturbed_probs[i] > max_score) {
+          max_score = perturbed_probs[i];
+        }
+      }
+      // Now constrain the sampled continuations to match the score of parent
+      for (int i = 0; i < adjusted_probs.size(); i++) {
+        // Use numerically stable version of truncated Gumbel:
+        // https://arxiv.org/pdf/1903.06059.pdf appendix B.3
+        const float v = top->fx - perturbed_probs[i] +
+                        std::log1p(-std::exp(perturbed_probs[i] - max_score));
+        adjusted_probs[i] = top->fx - std::max(static_cast<float>(0.0), v) -
+                            std::log1p(std::exp(-std::abs(v)));
+      }
+    }
+
     // Expands new node ending at node->pos
-    for (Node *lnode : end_nodes(node->pos)) {
+    for (int i = 0; i < end_nodes(node->pos).size(); i++) {
+      Node *lnode = end_nodes(node->pos)[i];
       auto *hyp = hypothesis_allocator.Allocate();
       hyp->node = lnode;
-      hyp->gx = lnode->score + top->gx;  // just adds node->score
-      hyp->fx =
-          lnode->backtrace_score + top->gx;  // backtrace_score is h(node).
+      if (sample) {
+        hyp->gx = probs[i];
+        hyp->fx = adjusted_probs[i];
+      } else {
+        hyp->gx = lnode->score + top->gx;  // just adds node->score
+        hyp->fx =
+            lnode->backtrace_score + top->gx;  // backtrace_score is h(node).
+      }
       hyp->next = top;
       agenda.push(hyp);
     }
@@ -329,15 +443,7 @@ std::vector<Lattice::Node *> Lattice::Sample(float theta) {
 
   std::vector<float> alpha(node_allocator_.size(), 0.0);
 
-  for (int pos = 0; pos <= len; ++pos) {
-    for (Node *rnode : begin_nodes_[pos]) {
-      for (Node *lnode : end_nodes_[pos]) {
-        alpha[rnode->node_id] = LogSumExp(
-            alpha[rnode->node_id], theta * lnode->score + alpha[lnode->node_id],
-            lnode == end_nodes_[pos][0]);
-      }
-    }
-  }
+  alpha = ForwardAlgorithm(theta);
 
   auto *mt = random::GetRandomGenerator();
 
@@ -349,7 +455,8 @@ std::vector<Lattice::Node *> Lattice::Sample(float theta) {
   while (true) {
     probs.clear();
     for (const Node *lnode : end_nodes_[node->pos]) {
-      probs.push_back(exp(alpha[lnode->node_id] + theta * lnode->score - Z));
+      probs.push_back(std::exp(static_cast<double>(alpha[lnode->node_id] +
+                                                   theta * lnode->score - Z)));
     }
     std::discrete_distribution<int> dist(probs.begin(), probs.end());
     node = end_nodes_[node->pos][dist(*mt)];
@@ -373,7 +480,6 @@ void Model::PopulateNodes(Lattice *lattice) const {
     return pos - begin_pos;
   };
 
-  constexpr float kUnkPenalty = 10.0;
   const float unk_score = min_score() - kUnkPenalty;
 
   const int len = lattice->size();
@@ -403,7 +509,7 @@ void Model::PopulateNodes(Lattice *lattice) const {
       Lattice::Node *node = lattice->Insert(begin_pos, length);
       node->id = id;  // the value of Trie stores vocab_id.
       // User defined symbol receives extra bonus to always be selected.
-      node->score = IsUserDefinedInlined(id) ? (length * max_score_ + 1.0)
+      node->score = IsUserDefinedInlined(id) ? (length * max_score_ - 0.1)
                                              : GetScoreInlined(id);
       if (!has_single_node && node->length == 1) {
         has_single_node = true;
@@ -424,7 +530,7 @@ int Model::PieceToId(absl::string_view piece) const {
     return it->second;
   }
   int id = 0;
-  trie_->exactMatchSearch(piece.data(), id);
+  trie_->exactMatchSearch(piece.data(), id, piece.size());
   return id == -1 ? unk_id_ : id;
 }
 
@@ -448,7 +554,7 @@ void Model::BuildTrie(std::vector<std::pair<absl::string_view, int>> *pieces) {
     value[i] = (*pieces)[i].second;      // vocab_id
   }
 
-  trie_ = port::MakeUnique<Darts::DoubleArray>();
+  trie_ = absl::make_unique<Darts::DoubleArray>();
   if (trie_->build(key.size(), const_cast<char **>(&key[0]), nullptr,
                    &value[0]) != 0) {
     status_ = util::InternalError("cannot build double-array.");
@@ -495,6 +601,10 @@ Model::Model(const ModelProto &model_proto) {
 Model::~Model() {}
 
 EncodeResult Model::Encode(absl::string_view normalized) const {
+  if (encoder_version_ == EncoderVersion::kOptimized) {
+    return EncodeOptimized(normalized);
+  }
+
   if (!status().ok() || normalized.empty()) {
     return {};
   }
@@ -504,7 +614,7 @@ EncodeResult Model::Encode(absl::string_view normalized) const {
   PopulateNodes(&lattice);
 
   EncodeResult results;
-  for (const auto *node : lattice.Viterbi()) {
+  for (const auto *node : lattice.Viterbi().first) {
     results.emplace_back(node->piece, node->id);
   }
 
@@ -524,14 +634,12 @@ NBestEncodeResult Model::NBestEncode(absl::string_view normalized,
   PopulateNodes(&lattice);
 
   NBestEncodeResult nbest_results;
-  for (const auto &nbest : lattice.NBest(nbest_size)) {
+  for (const auto &nbest : lattice.NBest(nbest_size, false, 0.0)) {
     EncodeResult results;
-    float score = 0.0;
-    for (const auto *node : nbest) {
-      score += node->score;
+    for (const auto *node : nbest.first) {
       results.emplace_back(node->piece, node->id);
     }
-    nbest_results.emplace_back(results, score);
+    nbest_results.emplace_back(results, nbest.second);
   }
 
   return nbest_results;
@@ -555,5 +663,286 @@ EncodeResult Model::SampleEncode(absl::string_view normalized,
   return results;
 }
 
+NBestEncodeResult Model::SampleEncodeAndScore(absl::string_view normalized,
+                                              float theta, int samples,
+                                              bool wor,
+                                              bool include_best) const {
+  if (!status().ok() || normalized.empty()) {
+    return {};
+  }
+  NBestEncodeResult results;
+  Lattice lattice;
+  lattice.SetSentence(normalized);
+  PopulateNodes(&lattice);
+
+  std::vector<float> alpha = lattice.ForwardAlgorithm(theta);
+  float marginal = alpha[lattice.eos_node()->node_id];
+
+  if (include_best) {
+    if (!wor) {
+      LOG(FATAL) << "include_best not supported for wor false";
+    }
+    EncodeResult result;
+    Lattice::LatticePathWithScore best_path = lattice.Viterbi();
+
+    for (const auto *node : best_path.first) {
+      result.emplace_back(node->piece, node->id);
+    }
+
+    // Inclusion probability if we always include the best is 1.
+    results.emplace_back(result, 0.0);
+  }
+
+  if (wor) {
+    // Draw k+1 samples as we need perturbed score of k+1th element
+    std::vector<Lattice::LatticePathWithScore> nbest_samples =
+        lattice.NBest(samples + 1, true, theta);
+
+    if (include_best) {
+      std::vector<std::vector<Lattice::Node *>> nbest_paths(
+          nbest_samples.size());
+      for (int i = 0; i < nbest_samples.size(); i++) {
+        nbest_paths[i] = nbest_samples[i].first;
+      }
+      // Remove the best result from the samples if necessary
+      Lattice::LatticePathWithScore best_path = lattice.Viterbi();
+
+      const int index_of_best =
+          (std::find(nbest_paths.begin(), nbest_paths.end(), best_path.first) -
+           nbest_paths.begin());
+
+      if (index_of_best != nbest_samples.size()) {
+        LOG(INFO) << "removing best path from samples";
+        nbest_samples.erase(nbest_samples.begin() + index_of_best);
+      } else {
+        nbest_samples.pop_back();
+      }
+    }
+    // We use the perturbed score of the k+1th element to calculate the
+    // inclusion probability.
+    const double kappa = static_cast<double>(nbest_samples.back().second);
+    // Discard the last sample
+    nbest_samples.pop_back();
+    for (const auto &nbest : nbest_samples) {
+      EncodeResult result;
+      float score = 0.0;
+
+      for (const auto *node : nbest.first) {
+        score += (theta * node->score);
+        result.emplace_back(node->piece, node->id);
+      }
+
+      results.emplace_back(result, score - marginal);
+    }
+
+    // Now calculate the inclusion probability
+    for (auto &it : results) {
+      // Only modify non best sample inclusion probabilities.
+      if (it.second != 0.0) {
+        double x = it.second - kappa;
+        double y = std::exp(x);
+        double inclusion_prob;
+        if (x <= -10) {
+          // Series expansion of the log Gumbel survival function up to eps.
+          inclusion_prob =
+              x - (y / 2) + (std::pow(y, 2) / 24) - std::pow(y, 4) / 2880;
+        } else {
+          inclusion_prob = std::log(-std::expm1(-y));
+        }
+        it.second = static_cast<float>(inclusion_prob);
+      }
+    }
+  } else {
+    while (results.size() < samples) {
+      Lattice lattice;
+      lattice.SetSentence(normalized);
+      PopulateNodes(&lattice);
+
+      float score = 0.0;
+      EncodeResult result;
+      std::vector<Lattice::Node *> sample = lattice.Sample(theta);
+      for (const auto *node : sample) {
+        result.emplace_back(node->piece, node->id);
+        score += (theta * node->score);
+      }
+      results.emplace_back(result, score - marginal);
+    }
+  }
+
+  return results;
+}
+
+float Model::CalculateEntropy(absl::string_view normalized, float theta) const {
+  Lattice lattice;
+  lattice.SetSentence(normalized);
+  PopulateNodes(&lattice);
+
+  return lattice.CalculateEntropy(theta);
+}
+
+bool Model::VerifyOutputsEquivalent(absl::string_view expected,
+                                    absl::string_view actual) const {
+  auto compute_unigram_model_score =
+      [this](std::vector<absl::string_view> output_pieces) {
+        float total_score = 0;
+        const float unk_score = min_score() - kUnkPenalty;
+        for (const auto p : output_pieces) {
+          const auto id = PieceToId(p);
+          if (id == unk_id_) {
+            total_score += unk_score;
+          } else {
+            const int length = p.size();
+            total_score += IsUserDefinedInlined(id)
+                               ? (length * max_score_ - 0.1)
+                               : GetScoreInlined(id);
+          }
+        }
+        return total_score;
+      };
+  const auto expected_score =
+      compute_unigram_model_score(absl::StrSplit(expected, ' '));
+  const auto actual_score =
+      compute_unigram_model_score(absl::StrSplit(actual, ' '));
+  if (std::abs(expected_score - actual_score) > kEpsilon) {
+    LOG(WARNING) << "Two sentence piece sequences are not equivalent! Left: "
+                 << expected << ", Score: " << expected_score
+                 << ". Right: " << actual << ", Score: " << actual_score << ".";
+    return false;
+  }
+  return true;
+}
+
+EncodeResult Model::EncodeOptimized(absl::string_view normalized) const {
+  // An optimized Viterbi algorithm for unigram language models. Benchmarking
+  // results show that it generates almost identical outputs and achieves 2.1x
+  // speedup on average for 102 languages compared to the original
+  // implementation. It's based on the following three ideas:
+  //
+  // 1. Because it uses the *unigram* model:
+  //     best_score(x1, x2, …, xt) = best_score(x1, x2, …, x{t-1}) + score(xt)
+  // Deciding the best path (and score) can be decoupled into two isolated
+  // terms: (a) the best path ended before the last token `best_score(x1, x2, …,
+  // x{t-1})`, and (b) the last token and its `score(xt)`. The two terms are
+  // not related to each other at all.
+  //
+  // Therefore, we can compute once and store the *best_path ending at
+  // each character position*. In this way, when we know best_path_ends_at[M],
+  // we can reuse it to compute all the best_path_ends_at_[...] where the last
+  // token starts at the same character position M.
+  //
+  // This improves the time complexity from O(n*k*k) to O(n*k) because it
+  // eliminates the extra loop of recomputing the best path ending at the same
+  // position, where n is the input length and k is the maximum number of tokens
+  // that can be recognized starting at each position.
+  //
+  // 2. Again, because it uses the *unigram* model, we don’t need to actually
+  // store the lattice nodes. We still recognize all the tokens and lattice
+  // nodes from the input, but along identifying them, we use and discard them
+  // on the fly. There is no need to actually store them for best path Viterbi
+  // decoding. The only thing we need to store is the best_path ending at
+  // each character position.
+  //
+  // This improvement reduces the things needed to store in memory from O(n*k)
+  // to O(n), where n is the input length and k is the maximum number of tokens
+  // that can be recognized starting at each position.
+  //
+  // It also avoids the need of dynamic-size lattice node pool, because the
+  // number of things to store is fixed as n.
+  //
+  // 3. SentencePiece is designed to work with unicode, taking utf-8 encoding
+  // inputs. In the original implementation, the lattice positions are based on
+  // unicode positions. A mapping from unicode position to the utf-8 position is
+  // maintained to recover the utf-8 string piece.
+  //
+  // We found that it is sufficient and beneficial to directly work with utf-8
+  // positions:
+  //
+  // Firstly, it saves the conversion and mapping between unicode positions and
+  // utf-8 positions.
+  //
+  // Secondly, it reduces the number of fields we need to maintain in the
+  // node/path structure. Specifically, there are 8 fields defined in
+  // `Lattice::Node` used by the original encoder, but here in the optimized
+  // encoder we only need to define 3 fields in `BestPathNode`.
+
+  if (!status().ok() || normalized.empty()) {
+    return {};
+  }
+  // Represents the last node of the best path.
+  struct BestPathNode {
+    int id = -1;  // The vocab id. (maybe -1 for UNK)
+    float best_path_score =
+        0;  // The total score of the best path ending at this node.
+    int starts_at =
+        -1;  // The starting position (in utf-8) of this node. The entire best
+             // path can be constructed by backtracking along this link.
+  };
+  const int size = normalized.size();
+  const float unk_score = min_score() - kUnkPenalty;
+  // The ends are exclusive.
+  std::vector<BestPathNode> best_path_ends_at(size + 1);
+  // Generate lattice on-the-fly (not stored) and update best_path_ends_at.
+  int starts_at = 0;
+  while (starts_at < size) {
+    std::size_t node_pos = 0;
+    std::size_t key_pos = starts_at;
+    const auto best_path_score_till_here =
+        best_path_ends_at[starts_at].best_path_score;
+    bool has_single_node = false;
+    const int mblen =
+        std::min<int>(string_util::OneCharLen(normalized.data() + starts_at),
+                      size - starts_at);
+    while (key_pos < size) {
+      const int ret =
+          trie_->traverse(normalized.data(), node_pos, key_pos, key_pos + 1);
+      if (ret == -2) break;
+      if (ret >= 0) {
+        if (IsUnusedInlined(ret)) continue;
+        // Update the best path node.
+        auto &target_node = best_path_ends_at[key_pos];
+        const auto length = (key_pos - starts_at);
+        // User defined symbol receives extra bonus to always be selected.
+        const auto score = IsUserDefinedInlined(ret)
+                               ? (length * max_score_ - 0.1)
+                               : GetScoreInlined(ret);
+        const auto candidate_best_path_score =
+            score + best_path_score_till_here;
+        if (target_node.starts_at == -1 ||
+            candidate_best_path_score > target_node.best_path_score) {
+          target_node.best_path_score = candidate_best_path_score;
+          target_node.starts_at = starts_at;
+          target_node.id = ret;
+        }
+        if (!has_single_node && length == mblen) {
+          has_single_node = true;
+        }
+      }
+    }
+    if (!has_single_node) {
+      auto &target_node = best_path_ends_at[starts_at + mblen];
+      const auto candidate_best_path_score =
+          unk_score + best_path_score_till_here;
+      if (target_node.starts_at == -1 ||
+          candidate_best_path_score > target_node.best_path_score) {
+        target_node.best_path_score = candidate_best_path_score;
+        target_node.starts_at = starts_at;
+        target_node.id = unk_id_;
+      }
+    }
+    // Move by one unicode character.
+    starts_at += mblen;
+  }
+  // Backtrack to identify the best path.
+  EncodeResult results;
+  int ends_at = size;
+  while (ends_at > 0) {
+    const auto &node = best_path_ends_at[ends_at];
+    results.emplace_back(
+        normalized.substr(node.starts_at, ends_at - node.starts_at), node.id);
+    ends_at = node.starts_at;
+  }
+  std::reverse(results.begin(), results.end());
+  return results;
+}
 }  // namespace unigram
 }  // namespace sentencepiece
