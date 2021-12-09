@@ -14,7 +14,7 @@ sentencepiece_download_model(
 \arguments{
 \item{language}{a character string with the language name. This can be either a plain language or a wikipedia shorthand. \cr
 Possible values can be found by looking at the examples or typing sentencepiece:::.bpemb$languages \cr
-If you provide multi it downloads the multilingual model available at \url{https://bpemb.h-its.org/multi}}
+If you provide multi it downloads the multilingual model available at \url{https://bpemb.h-its.org/multi/}}
 
 \item{vocab_size}{integer indicating the number of tokens in the final vocabulary. Defaults to 5000. Possible values depend on the language. To inspect possible values, type sentencepiece:::.bpemb$vocab_sizes and look to your language of your choice.}
 

@@ -39,7 +39,7 @@ Build a sentencepiece model on text and build a matching word2vec model on the s
 library(tokenizers.bpe)
 data(belgium_parliament, package = "tokenizers.bpe")
 x     <- subset(belgium_parliament, language \%in\% "dutch")
-model <- BPEembedder(x, tokenizer = "unigram", args = list(vocab_size = 1000),
+model <- BPEembedder(x, tokenizer = "bpe", args = list(vocab_size = 1000),
                      type = "cbow", dim = 20, iter = 10) 
 model
 

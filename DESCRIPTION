@@ -31,7 +31,6 @@ Description: Unsupervised text tokenizer allowing to perform byte pair encoding 
 URL: https://github.com/bnosac/sentencepiece
 License: MPL-2.0
 Encoding: UTF-8
-LazyData: true
 RoxygenNote: 7.1.1
 Depends: R (>= 2.10)
 Imports: Rcpp (>= 0.11.5), stats

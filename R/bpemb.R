@@ -7,7 +7,7 @@
 #' as Glove embeddings of these Byte Pair subwords. Models for 275 languages are available.
 #' @param language a character string with the language name. This can be either a plain language or a wikipedia shorthand. \cr
 #' Possible values can be found by looking at the examples or typing sentencepiece:::.bpemb$languages \cr
-#' If you provide multi it downloads the multilingual model available at \url{https://bpemb.h-its.org/multi}
+#' If you provide multi it downloads the multilingual model available at \url{https://bpemb.h-its.org/multi/}
 #' @param vocab_size integer indicating the number of tokens in the final vocabulary. Defaults to 5000. Possible values depend on the language. To inspect possible values, type sentencepiece:::.bpemb$vocab_sizes and look to your language of your choice.
 #' @param dim dimension of the embedding. Either 25, 50, 100, 200 or 300.
 #' @param model_dir path to the location where the model will be downloaded to. Defaults to \code{system.file(package = "sentencepiece", "models")}.
@@ -240,7 +240,7 @@ BPEembed <- function(file_sentencepiece = x$file_model, file_word2vec = x$glove.
 #' library(tokenizers.bpe)
 #' data(belgium_parliament, package = "tokenizers.bpe")
 #' x     <- subset(belgium_parliament, language %in% "dutch")
-#' model <- BPEembedder(x, tokenizer = "unigram", args = list(vocab_size = 1000),
+#' model <- BPEembedder(x, tokenizer = "bpe", args = list(vocab_size = 1000),
 #'                      type = "cbow", dim = 20, iter = 10) 
 #' model
 #' 
