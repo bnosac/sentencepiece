@@ -260,20 +260,25 @@ BPEembed <- function(file_sentencepiece = x$file_model, file_word2vec = x$glove.
 #' txt <- c("De eigendomsoverdracht aan de deelstaten is ingewikkeld.")
 #' values <- predict(model, txt, type = "encode")  
 BPEembedder <- function(x, tokenizer = c("bpe", "char", "unigram", "word"), args = list(vocab_size = 8000, coverage = 0.9999), ...){
+  requireNamespace("word2vec")
+  if(packageVersion("word2vec") < "0.2.0"){
+    stop("This requires word2vec package >= 0.2.0")
+  }
+  
   tokenizer <- match.arg(tokenizer)
   stopifnot(is.data.frame(x) && all(c("doc_id", "text") %in% colnames(x)))
   ## build sentencepiece model + word2vec model
   f <- tempfile()
   on.exit(file.remove(f))
   writeLines(x$text, con = f)
-  args$x <- x
+  args$x <- f
   args$type <- tokenizer
   model <- do.call(sentencepiece, args)
   
   ## replace text with ids and train a word2vec model
   text <- sentencepiece_encode(model, x$text, type = "ids")
   text <- sapply(text, paste, collapse = " ")
-  w2v <- word2vec(text, ...)
+  w2v <- word2vec::word2vec(text, ...)
   embedding <- predict(w2v, newdata = model$vocabulary$id, type = "embedding")
   rownames(embedding) <- model$vocabulary$subword
   embedding[is.na(embedding)] <- 0
