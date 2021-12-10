@@ -70,7 +70,7 @@ sentencepiece <- function(x, type = c("bpe", "char", "unigram", "word"), vocab_s
   if(missing(args)){
     stopifnot(is.character(x))
     stopifnot(all(file.exists(x)))
-    args <- sprintf("--input=%s --model_prefix=%s --vocab_size=%s --character_coverage=%s --model_type=%s", paste(x, collapse=","), model_prefix, vocab_size, coverage, type)
+    args <- sprintf("--input=%s --model_prefix=%s --vocab_size=%s --character_coverage=%s --model_type=%s --num_threads=%s", paste(x, collapse=","), model_prefix, vocab_size, coverage, type, threads)
   }else{
     args <- as.character(args)
     model_prefix <- regmatches(args, regexpr(args, pattern = "model_prefix=.+ -"))
