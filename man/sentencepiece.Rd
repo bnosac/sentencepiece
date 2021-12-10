@@ -56,9 +56,9 @@ folder <- tempdir()
 }
 writeLines(belgium_parliament$text, con = path)
 \dontshow{
-model <- sentencepiece(path, type = "char", vocab_size = 10, model_dir = folder)
-model <- sentencepiece(path, type = "unigram", vocab_size = 10, model_dir = folder)
-model <- sentencepiece(path, type = "bpe", vocab_size = 10, model_dir = folder)
+model <- sentencepiece(path, type = "char", vocab_size = 30, model_dir = folder)
+model <- sentencepiece(path, type = "unigram", vocab_size = 50, model_dir = folder)
+model <- sentencepiece(path, type = "bpe", vocab_size = 200, model_dir = folder)
 }
 \donttest{
 model <- sentencepiece(path, type = "char", 
