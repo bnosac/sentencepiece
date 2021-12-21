@@ -1,3 +1,7 @@
+## CHANGES IN sentencepiece VERSION 0.2.1
+
+- Fix for clang-UBSAN error
+
 ## CHANGES IN sentencepiece VERSION 0.2
 
 - Fix wordpiece bug for 1-character words. (@jonthegeek, #4)
