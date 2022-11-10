@@ -1,3 +1,7 @@
+## CHANGES IN sentencepiece VERSION 0.2.2
+
+- use snprintf instead of sprintf to handle the R CMD check deprecating note on M1mac
+
 ## CHANGES IN sentencepiece VERSION 0.2.1
 
 - Fix for clang-UBSAN error
