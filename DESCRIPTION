@@ -1,7 +1,7 @@
 Package: sentencepiece
 Type: Package
 Title: Text Tokenization using Byte Pair Encoding and Unigram Modelling
-Version: 0.2.2
+Version: 0.2.3
 Authors@R: c(
     person('Jan', 'Wijffels', role = c('aut', 'cre', 'cph'), email = 'jwijffels@bnosac.be', comment = "R wrapper"), 
     person('BNOSAC', role = 'cph', comment = "R wrapper"), 

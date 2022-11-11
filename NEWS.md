@@ -1,3 +1,9 @@
+## CHANGES IN sentencepiece VERSION 0.2.3
+
+- fix R CMD check warning due to change in version 0.2.2. 
+    - in third_party/protobuf-lite/strutil.cc:506:33: warning: argument to ‘sizeof’ in ‘int snprintf(char*, size_t, const char*, ...)’ call is the same expression as the destination; did you mean to provide an explicit length? [-Wsizeof-pointer-memaccess]
+    - this part of third_party/protobuf-lite/strutil.cc was not used in sentencepiece
+
 ## CHANGES IN sentencepiece VERSION 0.2.2
 
 - use snprintf instead of sprintf to handle the R CMD check deprecating note on M1mac
