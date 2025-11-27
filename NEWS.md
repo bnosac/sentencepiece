@@ -1,3 +1,7 @@
+## CHANGES IN sentencepiece VERSION 0.2.4
+
+- Drop C++11 from Makevars
+
 ## CHANGES IN sentencepiece VERSION 0.2.3
 
 - fix R CMD check warning due to change in version 0.2.2. 

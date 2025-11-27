@@ -1,4 +1,3 @@
-CXX_STD = CXX11
 PKG_LIBS = -pthread 
 PKG_CPPFLAGS = -D HAVE_PTHREAD=1 -pthread -D_USE_INTERNAL_STRING_VIEW -DSTRICT_R_HEADERS -I. -I./sentencepiece -I./sentencepiece/src -I./sentencepiece/src/builtin_pb -I./third_party/absl -I./third_party/darts_clone -I./third_party/esaxx -I./third_party/protobuf-lite 
 
