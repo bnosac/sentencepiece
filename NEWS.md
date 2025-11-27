@@ -1,6 +1,7 @@
 ## CHANGES IN sentencepiece VERSION 0.2.4
 
 - Drop C++11 from Makevars
+- std::iterator replacement in src/third_party/protobuf-lite/google/protobuf/repeated_field.h as std::iterator is deprecated in C++17
 
 ## CHANGES IN sentencepiece VERSION 0.2.3
 
