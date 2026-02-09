@@ -36,3 +36,4 @@ Depends: R (>= 2.10)
 Imports: Rcpp (>= 0.11.5), stats
 Suggests: tokenizers.bpe, word2vec (>= 0.2.0)
 LinkingTo: Rcpp
+SystemRequirements: C++17
