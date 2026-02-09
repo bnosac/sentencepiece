@@ -1,3 +1,7 @@
+## CHANGES IN sentencepiece VERSION 0.2.5
+
+- Use C++17 in Makevars
+
 ## CHANGES IN sentencepiece VERSION 0.2.4
 
 - Drop C++11 from Makevars
